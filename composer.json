@@ -1,0 +1,32 @@
+{
+    "name": "seymenkonuk/framework",
+    "description": "Modern PHP uygulamaları geliştirmek için tasarlanmış, hafif ve sade bir MVC framework'ü.",
+    "type": "framework",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Recep Seymen Konuk",
+            "email": "konukrecepseymen@gmail.com"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "Seymenkonuk\\Framework\\": "src/"
+        }
+    },
+    "require": {
+        "league/plates": "^3.6",
+        "voku/html-min": "^4.5",
+        "predis/predis": "^3.2",
+        "seymenkonuk/validator": "^1.0"
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Seymenkonuk\\Framework\\Tests\\": "tests/"
+        }
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^11.5",
+        "phpstan/phpstan": "^2.0"
+    }
+}

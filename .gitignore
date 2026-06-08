@@ -1,0 +1,31 @@
+# Composer dependencies
+/vendor/
+
+# PHPUnit / test cache
+.phpunit.result.cache
+coverage/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE / editor
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Environment files (opsiyonel)
+*.env
+*.env.local
+*.env.*.local
+
+# Logs
+*.log
+
+# PHP CS Fixer / tools cache
+.php-cs-fixer.cache
+
+# Temporary files
+*.tmp
+*.swp
