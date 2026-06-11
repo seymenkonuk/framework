@@ -56,5 +56,9 @@ abstract class Schema
     //  AUTHORIZE
     // --------------------------------------------------------------------------
 
-    // abstract public function authorize(Request $request, ...$args): void;
+    // /** @return array{
+    //  *      title: string,
+    //  *      description: string
+    //  * }|null */
+    // abstract public function authorize(Request $request, ...$args): array|null;
 }

@@ -379,16 +379,19 @@ final class Router
                 ]);
                 // Validation Error
                 if ($result->failed()) {
-                    throw new ValidationException();
+                    throw new ValidationException($result->errors());
                 }
             }
             // Authorization Kontrolü
             if (method_exists($route->schema, "authorize")) {
-                /** @var ValidationResult $result */
+                /** @var array{
+                 *      title: string,
+                 *      description: string
+                 * }|null $result */
                 $result = $this->container->call([$route->schema, "authorize"]);
                 // Authorization Error
-                if ($result->failed()) {
-                    throw new AuthorizationException();
+                if ($result !== null) {
+                    throw new AuthorizationException($result["title"], $result["description"]);
                 }
             }
         }

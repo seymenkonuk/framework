@@ -16,9 +16,24 @@ use Throwable;
 class AuthorizationException extends Exception
 {
     public function __construct(
-        string $message = "Template Not Found",
+        protected string $title,
+        protected string $description,
         ?Throwable $previous = null,
     ) {
-        parent::__construct($message, previous: $previous);
+        parent::__construct("Yetkilendirme Hatası", previous: $previous);
+    }
+
+    /**  
+     * @return array{
+     *      title: string,
+     *      description: string
+     * }
+     */
+    public function errors(): array
+    {
+        return [
+            "title" => $this->title,
+            "description" => $this->description,
+        ];
     }
 }

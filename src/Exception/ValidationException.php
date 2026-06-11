@@ -15,10 +15,17 @@ use Throwable;
 
 class ValidationException extends Exception
 {
+    /** @param array<string, mixed>|string $errors */
     public function __construct(
-        string $message = "Template Not Found",
+        protected array|string $errors,
         ?Throwable $previous = null,
     ) {
-        parent::__construct($message, previous: $previous);
+        parent::__construct("Doğrulama Hatası", previous: $previous);
+    }
+
+    /** @return array<string, mixed>|string */
+    public function errors(): array|string
+    {
+        return $this->errors;
     }
 }
