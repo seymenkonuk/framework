@@ -183,10 +183,12 @@ final class Router
         $prefix = "";
 
         foreach ($this->groupStack as $group) {
-            $prefix .= $group["prefix"] ?? "";
+            $prefix .= "/";
+            $prefix .= trim($group["prefix"] ?? "", "/");
+            $prefix = rtrim($prefix, "/");
         }
 
-        return rtrim($prefix, "/") . "/" . ltrim($uri, "/");
+        return "/" . trim($prefix . "/" . trim($uri, "/"), "/");
     }
 
     /** @return array<string> */
@@ -235,7 +237,7 @@ final class Router
             }
             // Route'u Öğren
             $methods = (array)$route->methods;
-            $uri = rtrim($prefix, "/") . "/" . ltrim($route->uri, "/");
+            $uri = "/" . trim(trim($prefix, "/") . "/" . trim($route->uri, "/"), "/");
             // Name Attribute
             /** @var Name|null $nameAttribute */
             $nameAttribute = $this->getAttribute($method, Name::class);
