@@ -31,7 +31,7 @@ final class TemplateEngine
     //  CONFIG
     // --------------------------------------------------------------------------
 
-    protected string $dir = "";
+    protected string $dir = "Views";
 
     // --------------------------------------------------------------------------
     //  CONSTRUCTOR
