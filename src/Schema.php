@@ -21,7 +21,7 @@ abstract class Schema
     // --------------------------------------------------------------------------
 
     public function __construct(
-        private Validator $validator,
+        protected Validator $validator,
     ) {}
 
     // --------------------------------------------------------------------------
