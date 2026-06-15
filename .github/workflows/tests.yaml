@@ -28,8 +28,5 @@ jobs:
       - name: Install dependencies
         run: composer install --prefer-dist --no-progress --no-interaction
 
-      - name: Run PHPStan
-        run: vendor/bin/phpstan analyse
-
-      - name: Run PHPUnit
-        run: vendor/bin/phpunit
+      - name: Run checks
+        run: composer check
