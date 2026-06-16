@@ -23,7 +23,7 @@ abstract class Repository
     // --------------------------------------------------------------------------
 
     public function __construct(
-        protected Database $db
+        public readonly Database $database
     ) {}
 
     // --------------------------------------------------------------------------
@@ -32,7 +32,7 @@ abstract class Repository
 
     public function find(int|string $id): mixed
     {
-        return $this->db
+        return $this->database
             ->query("
                 SELECT *
                 FROM {$this->table}
@@ -46,7 +46,7 @@ abstract class Repository
     /** @return array<mixed> */
     public function all(): array
     {
-        return $this->db
+        return $this->database
             ->query("
                 SELECT *
                 FROM {$this->table}
@@ -57,7 +57,7 @@ abstract class Repository
 
     public function exists(int|string $id): bool
     {
-        return $this->db
+        return $this->database
             ->query("
                 SELECT 1
                 FROM {$this->table}
@@ -75,7 +75,7 @@ abstract class Repository
     public function count(): int
     {
         /** @var int $value */
-        $value = $this->db
+        $value = $this->database
             ->query("
                 SELECT COUNT(*)
                 FROM {$this->table}
@@ -105,7 +105,7 @@ abstract class Repository
             )
         );
 
-        $this->db
+        $this->database
             ->query("
                 INSERT INTO {$this->table}
                 ($columns)
@@ -113,7 +113,7 @@ abstract class Repository
             ")
             ->execute($data);
 
-        return $this->db->lastInsertId();
+        return $this->database->lastInsertId();
     }
 
     // --------------------------------------------------------------------------
@@ -133,7 +133,7 @@ abstract class Repository
 
         $data["id"] = $id;
 
-        $this->db
+        $this->database
             ->query("
                 UPDATE {$this->table}
                 SET $sql
@@ -141,7 +141,7 @@ abstract class Repository
             ")
             ->execute($data);
 
-        return $this->db->rowCount() > 0;
+        return $this->database->rowCount() > 0;
     }
 
     // --------------------------------------------------------------------------
@@ -150,13 +150,13 @@ abstract class Repository
 
     public function delete(int|string $id): bool
     {
-        $this->db
+        $this->database
             ->query("
                 DELETE FROM {$this->table}
                 WHERE {$this->primaryKey} = :id
             ")
             ->execute(["id" => $id]);
 
-        return $this->db->rowCount() > 0;
+        return $this->database->rowCount() > 0;
     }
 }
