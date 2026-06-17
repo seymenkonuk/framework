@@ -28,12 +28,27 @@ abstract class Schema
     //  RULES
     // --------------------------------------------------------------------------
 
-    abstract public function body(): ObjectValidator;
-    abstract public function query(): ObjectValidator;
-    abstract public function params(): ObjectValidator;
-    abstract public function files(): ObjectValidator;
+    public function body(): ObjectValidator
+    {
+        return $this->validator->object()->schema([]);
+    }
 
-    final public function rules(): ObjectValidator
+    public function query(): ObjectValidator
+    {
+        return $this->validator->object()->schema([]);
+    }
+
+    public function params(): ObjectValidator
+    {
+        return $this->validator->object()->schema([]);
+    }
+
+    public function files(): ObjectValidator
+    {
+        return $this->validator->object()->schema([]);
+    }
+
+    public function rules(): ObjectValidator
     {
         return $this->validator->object()->schema([
             "body" => $this->body(),
