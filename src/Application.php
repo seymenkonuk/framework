@@ -108,7 +108,7 @@ final class Application
         $reflection = new ReflectionFunction($callback);
 
         foreach ($reflection->getParameters() as $parameter) {
-            if ($parameter->getName() == "exception") {
+            if ($parameter->getName() !== "exception") {
                 continue;
             }
 
