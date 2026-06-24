@@ -108,7 +108,7 @@ final class Application
         $reflection = new ReflectionFunction($callback);
 
         foreach ($reflection->getParameters() as $parameter) {
-            if (!in_array($parameter->getName(), ['e', 'exception'])) {
+            if ($parameter->getName() == "exception") {
                 continue;
             }
 
@@ -183,7 +183,7 @@ final class Application
         foreach ($this->exceptionCallbacks as $exceptionClass => $callback) {
             if ($e instanceof $exceptionClass) {
                 /** @var Response $response */
-                $response = $this->container->call($callback);
+                $response = $this->container->call($callback, ["exception" => $e]);
                 return $response;
             }
         }
