@@ -9,6 +9,14 @@
 namespace Seymenkonuk\Framework;
 
 
+use Closure;
+use Throwable;
+
+use ReflectionFunction;
+use ReflectionNamedType;
+use ReflectionUnionType;
+use ReflectionIntersectionType;
+
 use Predis\Client as Redis;
 
 use Seymenkonuk\Validator\Localization\FileLoader;
@@ -38,6 +46,8 @@ final class Application
     protected Router $router;
 
     protected ?string $routeConfig = null;
+    /** @var array<string, Closure(): Response> $exceptionCallbacks */
+    protected array $exceptionCallbacks = [];
 
     // --------------------------------------------------------------------------
     // CONSTRUCTOR
@@ -62,6 +72,12 @@ final class Application
         ));
 
         $this->router = new Router($this->container);
+
+
+        $this->container->instance(Response::class, $this->response);
+        $this->container->instance(Cache::class, $this->cache);
+        $this->container->instance(Database::class, $this->database);
+        $this->container->instance(Validator::class, $this->validator);
     }
 
     // --------------------------------------------------------------------------
@@ -80,6 +96,38 @@ final class Application
     public function withRouting(string $routeConfig): self
     {
         $this->routeConfig = $routeConfig;
+        return $this;
+    }
+
+    // --------------------------------------------------------------------------
+    // GLOBAL EXCEPTION HANDLER
+    // --------------------------------------------------------------------------
+
+    public function withException(Closure $callback): self
+    {
+        $reflection = new ReflectionFunction($callback);
+
+        foreach ($reflection->getParameters() as $parameter) {
+            if (!in_array($parameter->getName(), ['e', 'exception'])) {
+                continue;
+            }
+
+            $type = $parameter->getType();
+
+            $types = match (true) {
+                $type instanceof ReflectionUnionType => $type->getTypes(),
+                $type instanceof ReflectionNamedType => [$type],
+                default => [],
+            };
+
+            foreach ($types as $reflectionType) {
+                if ($reflectionType instanceof ReflectionIntersectionType) {
+                    continue;
+                }
+                $this->exceptionCallbacks[$reflectionType->getName()] = $callback;
+            }
+        }
+
         return $this;
     }
 
@@ -105,19 +153,21 @@ final class Application
 
     public function run(): void
     {
-        ob_start();
+        /** @var ?Response $response  */
+        $response = null;
 
-        $this->container->instance(Response::class, $this->response);
-        $this->container->instance(Cache::class, $this->cache);
-        $this->container->instance(Database::class, $this->database);
-        $this->container->instance(Validator::class, $this->validator);
+        try {
+            ob_start();
 
-        // Route Yapılandırmasını Yap
-        if ($this->routeConfig !== null && method_exists($this->routeConfig, "register")) {
-            $this->container->call([$this->routeConfig, "register"], ["router" => $this->router]);
+            // Route Yapılandırmasını Yap
+            if ($this->routeConfig !== null && method_exists($this->routeConfig, "register")) {
+                $this->container->call([$this->routeConfig, "register"], ["router" => $this->router]);
+            }
+            // Controller'ı Çağır
+            $response = $this->router->dispatch($this->request);
+        } catch (Throwable $e) {
+            $response = $this->handleException($e);
         }
-        // Controller'ı Çağır
-        $response = $this->router->dispatch($this->request);
 
         // Bufferdakileri Çöpe At
         while (ob_get_level() > 0) {
@@ -126,5 +176,18 @@ final class Application
 
         // Response'u Göster
         $response->send();
+    }
+
+    private function handleException(Throwable $e): Response
+    {
+        foreach ($this->exceptionCallbacks as $exceptionClass => $callback) {
+            if ($e instanceof $exceptionClass) {
+                /** @var Response $response */
+                $response = $this->container->call($callback);
+                return $response;
+            }
+        }
+
+        throw $e;
     }
 }
