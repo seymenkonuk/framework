@@ -197,7 +197,7 @@ final class Response
     // JSON HELPERS
     // --------------------------------------------------------------------------
 
-    /** @param array<string, mixed> $data */
+    /** @param array<mixed, mixed> $data */
     public function jsonSuccess(string $message, array $data = []): self
     {
         return $this->status(200)->json([
@@ -207,7 +207,7 @@ final class Response
         ]);
     }
 
-    /** @param array<string, mixed> $errors */
+    /** @param array<mixed, mixed> $errors */
     public function jsonError(string $message, array $errors = [], int $status = 400): self
     {
         return $this->status($status)->json([
