@@ -17,6 +17,7 @@ abstract class Repository
 
     protected string $table;
     protected string $primaryKey = "id";
+    protected string $model;
 
     // --------------------------------------------------------------------------
     // DEPENDENCIES
@@ -40,7 +41,7 @@ abstract class Repository
                 LIMIT 1
             ")
             ->execute(["id" => $id])
-            ->fetch();
+            ->fetch($this->model);
     }
 
     /** @return array<mixed> */
@@ -52,7 +53,7 @@ abstract class Repository
                 FROM {$this->table}
             ")
             ->execute()
-            ->fetchAll();
+            ->fetchAll($this->model);
     }
 
     public function exists(int|string $id): bool
