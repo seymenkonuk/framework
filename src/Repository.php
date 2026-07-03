@@ -9,6 +9,9 @@
 namespace Seymenkonuk\Framework;
 
 
+use Generator;
+
+
 abstract class Repository
 {
     // --------------------------------------------------------------------------
@@ -28,21 +31,8 @@ abstract class Repository
     ) {}
 
     // --------------------------------------------------------------------------
-    // BASIC FINDERS
+    // ALL
     // --------------------------------------------------------------------------
-
-    public function find(int|string $id): mixed
-    {
-        return $this->database
-            ->query("
-                SELECT *
-                FROM {$this->table}
-                WHERE {$this->primaryKey} = :id
-                LIMIT 1
-            ")
-            ->execute(["id" => $id])
-            ->fetch($this->model);
-    }
 
     /** @return array<mixed> */
     public function all(): array
@@ -56,6 +46,26 @@ abstract class Repository
             ->fetchAll($this->model);
     }
 
+    public function yieldAll(): Generator
+    {
+        return $this->database
+            ->query("
+                SELECT *
+                FROM {$this->table}
+            ")
+            ->execute()
+            ->yieldAll($this->model);
+    }
+
+    // --------------------------------------------------------------------------
+    // BASIC FINDERS
+    // --------------------------------------------------------------------------
+
+    public function find(int|string $id): mixed
+    {
+        return $this->where($this->primaryKey, $id);
+    }
+
     public function exists(int|string $id): bool
     {
         return $this->database
@@ -67,6 +77,19 @@ abstract class Repository
             ")
             ->execute(["id" => $id])
             ->exists();
+    }
+
+    public function where(string $columnName, int|string $columnValue): mixed
+    {
+        return $this->database
+            ->query("
+                SELECT *
+                FROM {$this->table}
+                WHERE {$columnName} = :value
+                LIMIT 1
+            ")
+            ->execute(["value" => $columnValue])
+            ->fetch($this->model);
     }
 
     // --------------------------------------------------------------------------
