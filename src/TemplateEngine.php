@@ -31,7 +31,7 @@ final class TemplateEngine
     //  CONFIG
     // --------------------------------------------------------------------------
 
-    protected string $dir = "Views";
+    protected string $dir = "";
 
     // --------------------------------------------------------------------------
     //  CONSTRUCTOR
@@ -40,7 +40,7 @@ final class TemplateEngine
     public function __construct(string $rootDir)
     {
         // Template Engine Config
-        $this->plates = new Engine($rootDir);
+        $this->plates = new Engine(rtrim($rootDir) . "/Views");
         // Minifier Config
         $this->htmlMin = new HTMLMin();
         $this->htmlMin->doRemoveOmittedHtmlTags(false);
@@ -95,7 +95,7 @@ final class TemplateEngine
     public function renderError(int $code, array $data = []): string
     {
         try {
-            $html = $this->plates->render("/Errors/" . ltrim((string)$code, "/"), $data);
+            $html = $this->plates->render(rtrim($this->dir, "/") . "/Errors/" . ltrim((string)$code, "/"), $data);
             $minifiedHtml = $this->htmlMin->minify($html);
             return $minifiedHtml;
         } catch (Throwable $e) {
