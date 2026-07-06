@@ -35,6 +35,7 @@ final class Router
     /**
      * @var array{
      *      GET?: array<string, Route>,
+     *      QUERY?: array<string, Route>,
      *      POST?: array<string, Route>,
      *      PUT?: array<string, Route>,
      *      PATCH?: array<string, Route>,
@@ -73,6 +74,12 @@ final class Router
     }
 
     /** @param array{0: string, 1: string} $handler */
+    public function query(string $uri, array $handler): Route
+    {
+        return $this->addRoute("QUERY", $uri, $handler);
+    }
+
+    /** @param array{0: string, 1: string} $handler */
     public function post(string $uri, array $handler): Route
     {
         return $this->addRoute("POST", $uri, $handler);
@@ -99,7 +106,7 @@ final class Router
     /** @param array{0: string, 1: string} $handler */
     public function any(string $uri, array $handler): Route
     {
-        return $this->match(["GET", "POST", "PUT", "PATCH", "DELETE"], $uri, $handler);
+        return $this->match(["GET", "QUERY", "POST", "PUT", "PATCH", "DELETE"], $uri, $handler);
     }
 
     /**

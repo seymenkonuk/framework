@@ -1,6 +1,6 @@
 <?php
 // ============================================================================
-// File:    Any.php
+// File:    Query.php
 // Author:  Recep Seymen Konuk <konukrecepseymen@gmail.com>
 //
 // Licensed under the terms of the LICENSE file in the project root directory.
@@ -13,11 +13,11 @@ use Attribute;
 
 
 #[Attribute(Attribute::TARGET_METHOD)]
-class Any extends Route
+class Query extends Route
 {
     public function __construct(
         public string $uri,
     ) {
-        parent::__construct(["GET", "QUERY", "POST", "PATCH", "PUT", "DELETE"], $uri);
+        parent::__construct(["QUERY"], $uri);
     }
 }
