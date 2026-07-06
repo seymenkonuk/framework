@@ -45,6 +45,7 @@ final class Application
 
     protected Router $router;
 
+    protected ?Closure $dbConnectCallback = null;
     protected ?string $routeConfig = null;
     /** @var array<string, Closure(): Response> $exceptionCallbacks */
     protected array $exceptionCallbacks = [];
@@ -143,7 +144,8 @@ final class Application
         string $username,
         string $password,
     ): self {
-        $this->database->connect($host, $port, $dbname, $charset, $username, $password);
+        $this->dbConnectCallback
+            = fn() => $this->database->connect($host, $port, $dbname, $charset, $username, $password);
         return $this;
     }
 
@@ -158,6 +160,11 @@ final class Application
 
         try {
             ob_start();
+
+            // Veri Tabanına Bağlan
+            if ($this->dbConnectCallback !== null) {
+                $this->container->call($this->dbConnectCallback);
+            }
 
             // Route Yapılandırmasını Yap
             if ($this->routeConfig !== null && method_exists($this->routeConfig, "register")) {
