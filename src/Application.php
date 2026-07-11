@@ -17,6 +17,8 @@ use ReflectionNamedType;
 use ReflectionUnionType;
 use ReflectionIntersectionType;
 
+use Predis\Client as Redis;
+
 use Seymenkonuk\Framework\Cache\Cache;
 use Seymenkonuk\Framework\Cache\RedisCache;
 
@@ -32,6 +34,7 @@ final class Application
     // --------------------------------------------------------------------------
 
     protected Session $session;
+    protected Redis $redis;
     protected Database $database;
     protected Request $request;
     protected Response $response;
@@ -62,10 +65,21 @@ final class Application
             "tr",
         ));
 
+        $redisConfig = [
+            "host" => getenv("REDIS_HOST") ?: "127.0.0.1",
+            "port" => getenv("REDIS_PORT") ?: "6379",
+        ];
+
+        $redisPassword = getenv("REDIS_PASSWORD") ?: "";
+
+        if ($redisPassword !== "") {
+            $redisConfig["password"] = $redisPassword;
+        }
+
+        $this->redis = new Redis($redisConfig);
 
         $this->container->bind(Cache::class, RedisCache::class);
-
-        $this->container->instance(Cache::class, $this->container->make(Cache::class));
+        $this->container->instance(Cache::class, $this->redis);
         $this->container->instance(Session::class, $this->session);
         $this->container->instance(Request::class, $this->request);
         $this->container->instance(Response::class, $this->response);
