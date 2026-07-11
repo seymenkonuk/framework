@@ -34,7 +34,7 @@ final class Application
     // --------------------------------------------------------------------------
 
     protected Session $session;
-    protected Redis $redis;
+    protected Cache $cache;
     protected Database $database;
     protected Request $request;
     protected Response $response;
@@ -76,10 +76,10 @@ final class Application
             $redisConfig["password"] = $redisPassword;
         }
 
-        $this->redis = new Redis($redisConfig);
+        $this->cache = new RedisCache(new Redis($redisConfig));
 
         $this->container->bind(Cache::class, RedisCache::class);
-        $this->container->instance(Cache::class, $this->redis);
+        $this->container->instance(Cache::class, $this->cache);
         $this->container->instance(Session::class, $this->session);
         $this->container->instance(Request::class, $this->request);
         $this->container->instance(Response::class, $this->response);
