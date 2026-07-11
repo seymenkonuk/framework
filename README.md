@@ -1,5 +1,5 @@
 # Framework
-> Modern PHP uygulamaları geliştirmek için tasarlanmış, hafif ve sade bir MVC framework'ü. 
+> Modern PHP uygulamaları için geliştirilmiş hafif ve sade bir MVC framework çekirdeği.
 
 ## Açıklama
 Modern PHP uygulamaları geliştirmek için oluşturulmuş hafif, sade ve geliştirici dostu bir MVC framework'üdür.
