@@ -17,7 +17,8 @@ use ReflectionNamedType;
 use ReflectionUnionType;
 use ReflectionIntersectionType;
 
-use Predis\Client as Redis;
+use Seymenkonuk\Framework\Cache\Cache;
+use Seymenkonuk\Framework\Cache\RedisCache;
 
 use Seymenkonuk\Validator\Localization\FileLoader;
 use Seymenkonuk\Validator\Localization\Translator;
@@ -30,20 +31,13 @@ final class Application
     // PROPERTIES
     // --------------------------------------------------------------------------
 
-    protected Container $container;
-
-    protected TemplateEngine $templateEngine;
-    protected Response $response;
-    protected Request $request;
-
-    protected Redis $redis;
-    protected Cache $cache;
-
+    protected Session $session;
     protected Database $database;
-
-    protected Validator $validator;
-
+    protected Request $request;
+    protected Response $response;
+    protected Container $container;
     protected Router $router;
+    protected Validator $validator;
 
     protected ?Closure $dbConnectCallback = null;
     protected ?string $routeConfig = null;
@@ -56,27 +50,25 @@ final class Application
 
     private function __construct(protected string $basePath)
     {
-        $this->container = new Container();
-
-        $this->templateEngine = new TemplateEngine($basePath);
-        $this->response = new Response($this->templateEngine);
-        $this->request = new Request();
-
-        $this->redis = new Redis();
-        $this->cache = new Cache($this->redis);
-
+        $this->session = new Session();
         $this->database = new Database();
+        $this->request = new Request();
+        $this->response = new Response(new TemplateEngine($basePath));
+        $this->container = new Container();
+        $this->router = new Router($this->container);
 
         $this->validator = new Validator(new Translator(
             new FileLoader(),
             "tr",
         ));
 
-        $this->router = new Router($this->container);
 
+        $this->container->bind(Cache::class, RedisCache::class);
 
+        $this->container->instance(Cache::class, $this->container->make(Cache::class));
+        $this->container->instance(Session::class, $this->session);
+        $this->container->instance(Request::class, $this->request);
         $this->container->instance(Response::class, $this->response);
-        $this->container->instance(Cache::class, $this->cache);
         $this->container->instance(Database::class, $this->database);
         $this->container->instance(Validator::class, $this->validator);
     }

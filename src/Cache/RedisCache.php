@@ -1,18 +1,18 @@
 <?php
 // ============================================================================
-// File:    Cache.php
+// File:    RedisCache.php
 // Author:  Recep Seymen Konuk <konukrecepseymen@gmail.com>
 //
 // Licensed under the terms of the LICENSE file in the project root directory.
 // ============================================================================
 
-namespace Seymenkonuk\Framework;
+namespace Seymenkonuk\Framework\Cache;
 
 
 use Predis\Client as Redis;
 
 
-final class Cache
+final class RedisCache implements Cache
 {
     private const PREFIX = "cache:";
 
