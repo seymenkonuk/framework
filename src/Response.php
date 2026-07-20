@@ -120,6 +120,7 @@ final class Response
         }
 
         $this->filePath = $path;
+        $this->body = "";
 
         $this->header(
             "Content-Type",
@@ -141,6 +142,7 @@ final class Response
         $filename = basename($filename);
 
         $this->filePath = $path;
+        $this->body = "";
 
         $this->header(
             "Content-Type",
@@ -393,6 +395,78 @@ final class Response
     public function gatewayTimeout(): self
     {
         return $this->status(504);
+    }
+
+    // --------------------------------------------------------------------------
+    // GETTERS
+    // --------------------------------------------------------------------------
+
+    public function getStatus(): int
+    {
+        return $this->statusCode;
+    }
+
+    /** @return array<string, string> */
+    public function getHeaders(): array
+    {
+        return $this->headers;
+    }
+
+    public function getHeader(string $key): ?string
+    {
+        $headers = $this->getHeaders();
+        return $this->hasHeader($key) ? $headers[$key] : null;
+    }
+
+    public function hasHeader(string $key): bool
+    {
+        $headers = $this->getHeaders();
+        return array_key_exists($key, $headers);
+    }
+
+    /** @return array<array{
+     *      name: string,
+     *      value: string,
+     *      expires: int,
+     *      path: string,
+     *      domain: string,
+     *      secure: bool,
+     *      httponly: bool
+     * }> */
+    public function getCookies(): array
+    {
+        return $this->cookies;
+    }
+
+    /** @return ?array{
+     *      name: string,
+     *      value: string,
+     *      expires: int,
+     *      path: string,
+     *      domain: string,
+     *      secure: bool,
+     *      httponly: bool
+     * } */
+    public function getCookie(string $key): ?array
+    {
+        $cookies = $this->getCookies();
+        return $this->hasCookie($key) ? $cookies[$key] : null;
+    }
+
+    public function hasCookie(string $key): bool
+    {
+        $cookies = $this->getCookies();
+        return array_key_exists($key, $cookies);
+    }
+
+    public function getBody(): string
+    {
+        return $this->body;
+    }
+
+    public function getFilePath(): ?string
+    {
+        return $this->filePath;
     }
 
     // --------------------------------------------------------------------------
