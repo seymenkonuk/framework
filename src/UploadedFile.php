@@ -13,8 +13,10 @@ use finfo;
 
 use Seymenkonuk\Framework\Exception\FileUploadException;
 
+use Seymenkonuk\Validator\Validator\Type\File;
 
-final class UploadedFile
+
+final class UploadedFile implements File
 {
     // --------------------------------------------------------------------------
     //  CACHES
