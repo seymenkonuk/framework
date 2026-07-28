@@ -30,9 +30,11 @@
         "phpstan/phpstan": "^2.0"
     },
     "scripts": {
+        "autoload": "composer dump-autoload --optimize --strict-psr --strict-ambiguous",
         "test": "phpunit --testdox --colors=always",
         "phpstan": "phpstan analyse",
         "check": [
+            "@autoload",
             "@phpstan",
             "@test"
         ]
