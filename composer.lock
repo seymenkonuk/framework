@@ -188,16 +188,16 @@
         },
         {
             "name": "seymenkonuk/validator",
-            "version": "v1.3.1",
+            "version": "v1.4.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/seymenkonuk/validator.git",
-                "reference": "c177ef290863ef6c147522508a70dec48e73758c"
+                "reference": "0a4f8c34cddf27d7c50f03708401a77bfcf15c70"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/seymenkonuk/validator/zipball/c177ef290863ef6c147522508a70dec48e73758c",
-                "reference": "c177ef290863ef6c147522508a70dec48e73758c",
+                "url": "https://api.github.com/repos/seymenkonuk/validator/zipball/0a4f8c34cddf27d7c50f03708401a77bfcf15c70",
+                "reference": "0a4f8c34cddf27d7c50f03708401a77bfcf15c70",
                 "shasum": ""
             },
             "require-dev": {
@@ -223,9 +223,9 @@
             "description": "Modern PHP uygulamaları için geliştirilmiş şema tabanlı veri doğrulama kütüphanesi. Esnek kural sistemi, iç içe veri yapısı desteği ve zincirlenebilir API ile güçlü ve ölçeklenebilir validasyon çözümleri sunar.",
             "support": {
                 "issues": "https://github.com/seymenkonuk/validator/issues",
-                "source": "https://github.com/seymenkonuk/validator/tree/v1.3.1"
+                "source": "https://github.com/seymenkonuk/validator/tree/v1.4.0"
             },
-            "time": "2026-07-28T21:05:47+00:00"
+            "time": "2026-07-31T20:24:07+00:00"
         },
         {
             "name": "symfony/css-selector",
@@ -683,11 +683,11 @@
         },
         {
             "name": "phpstan/phpstan",
-            "version": "2.2.6",
+            "version": "2.2.7",
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/phpstan/phpstan/zipball/a6e9b5a9420f6109c091e87d82683bd1a80b87ed",
-                "reference": "a6e9b5a9420f6109c091e87d82683bd1a80b87ed",
+                "url": "https://api.github.com/repos/phpstan/phpstan/zipball/692db47b9dddb0487934e5236e77d48594aef921",
+                "reference": "692db47b9dddb0487934e5236e77d48594aef921",
                 "shasum": ""
             },
             "require": {
@@ -743,7 +743,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2026-07-26T21:22:49+00:00"
+            "time": "2026-07-29T17:39:32+00:00"
         },
         {
             "name": "phpunit/php-code-coverage",
