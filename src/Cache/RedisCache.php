@@ -12,7 +12,7 @@ namespace Seymenkonuk\Framework\Cache;
 use Predis\Client as Redis;
 
 
-final class RedisCache implements Cache
+final class RedisCache implements ICache
 {
     private const PREFIX = "cache:";
 

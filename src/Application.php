@@ -19,7 +19,7 @@ use ReflectionIntersectionType;
 
 use Predis\Client as Redis;
 
-use Seymenkonuk\Framework\Cache\Cache;
+use Seymenkonuk\Framework\Cache\ICache;
 use Seymenkonuk\Framework\Cache\RedisCache;
 
 use Seymenkonuk\Validator\Localization\FileLoader;
@@ -34,7 +34,7 @@ final class Application
     // --------------------------------------------------------------------------
 
     protected Session $session;
-    protected Cache $cache;
+    protected ICache $cache;
     protected Database $database;
     protected Request $request;
     protected Response $response;
@@ -78,8 +78,8 @@ final class Application
 
         $this->cache = new RedisCache(new Redis($redisConfig));
 
-        $this->container->bind(Cache::class, RedisCache::class);
-        $this->container->instance(Cache::class, $this->cache);
+        $this->container->bind(ICache::class, RedisCache::class);
+        $this->container->instance(ICache::class, $this->cache);
         $this->container->instance(Session::class, $this->session);
         $this->container->instance(Request::class, $this->request);
         $this->container->instance(Response::class, $this->response);

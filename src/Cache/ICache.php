@@ -1,6 +1,6 @@
 <?php
 // ============================================================================
-// File:    Cache.php
+// File:    ICache.php
 // Author:  Recep Seymen Konuk <konukrecepseymen@gmail.com>
 //
 // Licensed under the terms of the LICENSE file in the project root directory.
@@ -9,7 +9,7 @@
 namespace Seymenkonuk\Framework\Cache;
 
 
-interface Cache
+interface ICache
 {
     public function get(string $key, mixed $default = null): mixed;
     public function set(string $key, mixed $value, int $ttl = 0): bool;
