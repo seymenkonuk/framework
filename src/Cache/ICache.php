@@ -11,19 +11,21 @@ namespace Seymenkonuk\Framework\Cache;
 
 interface ICache
 {
+    // --------------------------------------------------------------------------
+    // GETTERS
+    // --------------------------------------------------------------------------
+
     public function get(string $key, mixed $default = null): mixed;
-    public function set(string $key, mixed $value, int $ttl = 0): bool;
-
     public function has(string $key): bool;
-    public function forget(string $key): bool;
-
-    public function clear(): bool;
-
-    // --------------------------------------------------------------------------
-    // PULL
-    // --------------------------------------------------------------------------
-
     public function pull(string $key, mixed $default = null): mixed;
+
+    // --------------------------------------------------------------------------
+    // SETTERS
+    // --------------------------------------------------------------------------
+
+    public function set(string $key, mixed $value, int $ttl = 0): bool;
+    public function remove(string $key): bool;
+    public function clear(): bool;
 
     // --------------------------------------------------------------------------
     // INCREMENT / DECREMENT
@@ -36,18 +38,9 @@ interface ICache
     // MULTI
     // --------------------------------------------------------------------------
 
-    /**
-     * @param array<string> $keys
-     * @param mixed $default
-     * @return array<string, mixed>
-     */
     public function getMultiple(array $keys, mixed $default = null): array;
-
-    /** @param array<string, mixed> $values */
     public function setMultiple(array $values, int $ttl = 0): bool;
-
-    /** @param array<string> $keys */
-    public function forgetMultiple(array $keys): bool;
+    public function removeMultiple(array $keys): bool;
 
     // --------------------------------------------------------------------------
     // TTL
@@ -71,9 +64,14 @@ interface ICache
     public function remember(string $key, int $ttl, callable $callback): mixed;
 
     // --------------------------------------------------------------------------
+    // DESTROY
+    // --------------------------------------------------------------------------
+
+    public function destroy(): bool;
+
+    // --------------------------------------------------------------------------
     // DRIVER
     // --------------------------------------------------------------------------
 
     public function driver(): string;
-    public function flush(): bool;
 }
