@@ -44,7 +44,8 @@ interface ISession
     public function set(string $key, mixed $value, array $parentKeys = self::DEFAULT_PARENT_KEYS): self;
     /** @param array<string> $parentKeys */
     public function remove(string $key, array $parentKeys = self::DEFAULT_PARENT_KEYS): self;
-    public function clear(): self;
+    /** @param array<string> $parentKeys */
+    public function clear(array $parentKeys = self::DEFAULT_PARENT_KEYS): self;
 
     // --------------------------------------------------------------------------
     // DESTROY
