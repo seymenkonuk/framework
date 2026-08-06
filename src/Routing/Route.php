@@ -6,7 +6,7 @@
 // Licensed under the terms of the LICENSE file in the project root directory.
 // ============================================================================
 
-namespace Seymenkonuk\Framework;
+namespace Seymenkonuk\Framework\Routing;
 
 
 final class Route
