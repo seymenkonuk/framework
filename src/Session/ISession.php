@@ -75,11 +75,13 @@ interface ISession
      * 
      * Anahtar mevcut değilse $default değeri döndürülür.
      * 
+     * @template T
+     * 
      * @param string $key session anahtarı.
-     * @param mixed $default anahtar bulunamadığında döndürülecek değer.
+     * @param T|null $default anahtar bulunamadığında döndürülecek değer.
      * @param array<string> $parentKeys anahtarın bulunduğu üst anahtar zinciri.
      * 
-     * @return mixed session değeri veya varsayılan değer.
+     * @return ($default is null ? mixed : T) session değeri veya varsayılan değer.
      */
     public function get(string $key, mixed $default = null, array $parentKeys = self::DEFAULT_PARENT_KEYS): mixed;
 
@@ -107,11 +109,13 @@ interface ISession
      * 
      * Anahtar mevcut değilse $default değeri döndürülür.
      * 
+     * @template T
+     * 
      * @param string $key okunup silinecek session anahtarı.
-     * @param mixed $default anahtar bulunamadığında döndürülecek değer.
+     * @param T|null $default anahtar bulunamadığında döndürülecek değer.
      * @param array<string> $parentKeys anahtarın bulunduğu üst anahtar zinciri.
      * 
-     * @return mixed session değeri veya varsayılan değer.
+     * @return ($default is null ? mixed : T) session değeri veya varsayılan değer.
      */
     public function pull(string $key, mixed $default = null, array $parentKeys = self::DEFAULT_PARENT_KEYS): mixed;
 
