@@ -21,10 +21,12 @@ interface IFlash
      * Yalnızca mevcut istekte okunabilen eski flash verileri kontrol edilir.
      * Anahtar mevcut değilse $default değeri döndürülür.
      * 
-     * @param string $key flash anahtarı.
-     * @param mixed $default anahtar bulunamadığında döndürülecek değer.
+     * @template T
      * 
-     * @return mixed flash değeri veya varsayılan değer.
+     * @param string $key flash anahtarı.
+     * @param T|null $default anahtar bulunamadığında döndürülecek değer.
+     * 
+     * @return ($default is null ? mixed : T) flash değeri veya varsayılan değer.
      */
     public function get(string $key, mixed $default = null): mixed;
 
