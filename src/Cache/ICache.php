@@ -20,10 +20,12 @@ interface ICache
      * 
      * Anahtar mevcut değilse $default değeri döndürülür.
      * 
-     * @param string $key cache anahtarı.
-     * @param mixed $default anahtar bulunamadığında döndürülecek değer.
+     * @template T
      * 
-     * @return mixed cache değeri veya varsayılan değer.
+     * @param string $key cache anahtarı.
+     * @param T|null $default anahtar bulunamadığında döndürülecek değer.
+     * 
+     * @return ($default is null ? mixed : T) cache değeri veya varsayılan değer.
      */
     public function get(string $key, mixed $default = null): mixed;
 
@@ -41,10 +43,12 @@ interface ICache
      * 
      * Anahtar mevcut değilse $default değeri döndürülür.
      * 
-     * @param string $key cache anahtarı.
-     * @param mixed $default anahtar bulunamadığında döndürülecek değer.
+     * @template T
      * 
-     * @return mixed cache değeri veya varsayılan değer.
+     * @param string $key cache anahtarı.
+     * @param T|null $default anahtar bulunamadığında döndürülecek değer.
+     * 
+     * @return ($default is null ? mixed : T) cache değeri veya varsayılan değer.
      */
     public function pull(string $key, mixed $default = null): mixed;
 
@@ -123,10 +127,12 @@ interface ICache
      * 
      * Mevcut olmayan anahtarlar için $default değeri döndürülür.
      * 
-     * @param array<string> $keys okunacak cache anahtarları.
-     * @param mixed $default bulunamayan anahtarlar için kullanılacak değer.
+     * @template T
      * 
-     * @return array<string, mixed> anahtarlarla eşleştirilmiş cache değerleri.
+     * @param array<string> $keys okunacak cache anahtarları.
+     * @param T|null $default bulunamayan anahtarlar için kullanılacak değer.
+     * 
+     * @return array<string, ($default is null ? mixed : T)> anahtarlarla eşleştirilmiş cache değerleri.
      */
     public function getMultiple(array $keys, mixed $default = null): array;
 
@@ -231,11 +237,13 @@ interface ICache
      * $ttl değeri saniye cinsindendir. Sıfır verilmesi, değerin süresiz olarak
      * saklanacağını ifade eder.
      * 
+     * @template T
+     * 
      * @param string $key cache anahtarı.
      * @param int $ttl değerin saniye cinsinden yaşam süresi.
-     * @param callable(): mixed $callback cache'de bulunamazsa getirilecek değer.
+     * @param callable(): T $callback cache'de bulunamazsa getirilecek değer.
      * 
-     * @return mixed cache içindeki veya callback tarafından üretilen değer.
+     * @return T cache'deki veya callback tarafından üretilen değer.
      */
     public function remember(string $key, int $ttl, callable $callback): mixed;
 
