@@ -44,9 +44,9 @@ interface ISession
      * 
      * @param bool $deleteOldSession eski session kaydının silinip silinmeyeceği.
      * 
-     * @return self session nesnesi.
+     * @return bool başarılıysa true, aksi halde false.
      */
-    public function regenerate(bool $deleteOldSession = true): self;
+    public function regenerate(bool $deleteOldSession = true): bool;
 
     // --------------------------------------------------------------------------
     // GETTERS
@@ -132,9 +132,9 @@ interface ISession
      * @param mixed $value saklanacak değer.
      * @param array<string> $parentKeys değerin yazılacağı üst anahtar zinciri.
      * 
-     * @return self session nesnesi.
+     * @return bool başarılıysa true, aksi halde false.
      */
-    public function set(string $key, mixed $value, array $parentKeys = self::DEFAULT_PARENT_KEYS): self;
+    public function set(string $key, mixed $value, array $parentKeys = self::DEFAULT_PARENT_KEYS): bool;
 
     /**
      * Belirtilen anahtarı ve ilişkili değeri session verilerinden siler.
@@ -147,9 +147,9 @@ interface ISession
      * @param string $key silinecek session anahtarı.
      * @param array<string> $parentKeys anahtarın bulunduğu üst anahtar zinciri.
      * 
-     * @return self session nesnesi.
+     * @return bool başarılıysa true, aksi halde false.
      */
-    public function remove(string $key, array $parentKeys = self::DEFAULT_PARENT_KEYS): self;
+    public function remove(string $key, array $parentKeys = self::DEFAULT_PARENT_KEYS): bool;
 
     /**
      * Belirtilen üst anahtar zincirinin altındaki tüm session verilerini siler.
@@ -161,9 +161,9 @@ interface ISession
      * 
      * @param array<string> $parentKeys temizlenecek alanın üst anahtar zinciri.
      * 
-     * @return self session nesnesi.
+     * @return bool başarılıysa true, aksi halde false.
      */
-    public function clear(array $parentKeys = self::DEFAULT_PARENT_KEYS): self;
+    public function clear(array $parentKeys = self::DEFAULT_PARENT_KEYS): bool;
 
     // --------------------------------------------------------------------------
     // DESTROY
