@@ -55,9 +55,9 @@ interface IFlash
      * @param string $key flash anahtarı.
      * @param mixed $value saklanacak değer.
      * 
-     * @return self flash nesnesi.
+     * @return bool başarılıysa true, aksi halde false.
      */
-    public function set(string $key, mixed $value): self;
+    public function set(string $key, mixed $value): bool;
 
     /**
      * Belirtilen anahtarı ve ilişkili değeri flash verilerinden siler.
@@ -69,9 +69,9 @@ interface IFlash
      * 
      * @param string $key silinecek flash anahtarı.
      * 
-     * @return self flash nesnesi.
+     * @return bool başarılıysa true, aksi halde false.
      */
-    public function remove(string $key): self;
+    public function remove(string $key): bool;
 
     /**
      * Saklanan tüm flash verilerini siler.
@@ -79,9 +79,9 @@ interface IFlash
      * Hem mevcut istekte okunabilen eski flash verileri hem de bir sonraki
      * istek için bekleyen yeni flash verileri temizlenir.
      * 
-     * @return self flash nesnesi.
+     * @return bool başarılıysa true, aksi halde false.
      */
-    public function clear(): self;
+    public function clear(): bool;
 
     // --------------------------------------------------------------------------
     // LIFECYCLE
@@ -98,9 +98,9 @@ interface IFlash
      * 
      * Bu metot her istek yaşam döngüsünün başında yalnızca bir kez çağrılmalıdır.
      * 
-     * @return self flash nesnesi.
+     * @return void
      */
-    public function age(): self;
+    public function age(): void;
 
     // --------------------------------------------------------------------------
     // DRIVER
