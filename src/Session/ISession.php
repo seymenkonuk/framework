@@ -11,6 +11,10 @@ namespace Seymenkonuk\Framework\Session;
 
 interface ISession
 {
+    // --------------------------------------------------------------------------
+    // CONSTANTS
+    // --------------------------------------------------------------------------
+
     /**
      * Normal uygulama verilerinin saklanacağı varsayılan üst anahtar zinciri.
      * 
