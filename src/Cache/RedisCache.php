@@ -149,12 +149,12 @@ final class RedisCache implements ICache
 
     public function setMultiple(array $values, int $ttl = 0, bool $keepTtl = false): bool
     {
-        $result = true;
+        $success = true;
         foreach ($values as $key => $value) {
-            $result2 = $this->set($key, $value, $ttl, $keepTtl);
-            $result = $result && $result2;
+            $current = $this->set($key, $value, $ttl, $keepTtl);
+            $success = $success && $current;
         }
-        return $result;
+        return $success;
     }
 
     public function removeMultiple(array $keys): bool
