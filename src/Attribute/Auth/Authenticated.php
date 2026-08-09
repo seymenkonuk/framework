@@ -6,7 +6,7 @@
 // Licensed under the terms of the LICENSE file in the project root directory.
 // ============================================================================
 
-namespace Seymenkonuk\Framework\Attribute;
+namespace Seymenkonuk\Framework\Attribute\Auth;
 
 
 use Attribute;
