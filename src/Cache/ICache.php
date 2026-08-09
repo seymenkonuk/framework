@@ -64,13 +64,17 @@ interface ICache
      * 
      * Aynı anahtar mevcut ise değeri ve yaşam süresi güncellenir.
      * 
+     * $keepTtl true ise $ttl değeri görmezden gelinerek mevcut anahtarın 
+     * yaşam süresi korunur.
+     * 
      * @param string $key cache anahtarı.
      * @param mixed $value saklanacak değer.
      * @param int $ttl değerin saniye cinsinden yaşam süresi.
+     * @param bool $keepTtl mevcut yaşam süresinin korunup korunmayacağı.
      * 
      * @return bool değer başarıyla saklandıysa true, aksi halde false.
      */
-    public function set(string $key, mixed $value, int $ttl = 0): bool;
+    public function set(string $key, mixed $value, int $ttl = 0, bool $keepTtl = false): bool;
 
     /**
      * Belirtilen anahtarı ve ilişkili değeri cache'den siler.
@@ -145,14 +149,18 @@ interface ICache
      * $ttl değeri saniye cinsindendir ve bütün değerler için uygulanır. 
      * Sıfır verilmesi, değerlerin süresiz olarak saklanacağını ifade eder.
      * 
+     * $keepTtl true ise $ttl değeri görmezden gelinerek mevcut anahtarların 
+     * yaşam süreleri korunur.
+     * 
      * Önceden mevcut olan anahtarların değeri ve yaşam süresi güncellenir.
      * 
      * @param array<string, mixed> $values saklanacak anahtarlar ve değerleri.
      * @param int $ttl tüm değerlerin saniye cinsinden saklanma süresi
+     * @param bool $keepTtl mevcut anahtarların yaşam sürelerinin korunup korunmayacağı.
      * 
      * @return bool bütün değerler başarıyla saklandıysa true, aksi halde false.
      */
-    public function setMultiple(array $values, int $ttl = 0): bool;
+    public function setMultiple(array $values, int $ttl = 0, bool $keepTtl = false): bool;
 
     /**
      * Belirilen anahtarları ve ilişkili değerleri tek işlemde cache'den siler.

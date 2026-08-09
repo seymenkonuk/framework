@@ -72,10 +72,14 @@ final class RedisCache implements ICache
     // SETTERS
     // --------------------------------------------------------------------------
 
-    public function set(string $key, mixed $value, int $ttl = 0): bool
+    public function set(string $key, mixed $value, int $ttl = 0, bool $keepTtl = false): bool
     {
         $key = $this->key($key);
         $value = serialize($value);
+
+        if ($keepTtl) {
+            return $this->redis->set($key, $value, "KEEPTTL") == true;
+        }
 
         if ($ttl > 0) {
             return $this->redis->set($key, $value, "EX", $ttl) == true;
@@ -93,7 +97,7 @@ final class RedisCache implements ICache
     public function clear(): bool
     {
         $pattern = $this->key("*");
-        /** @var array<string> $keys */
+        /** @var array<string> */
         $keys = $this->redis->keys($pattern);
 
         if (empty($keys)) {
@@ -143,11 +147,11 @@ final class RedisCache implements ICache
         return $result;
     }
 
-    public function setMultiple(array $values, int $ttl = 0): bool
+    public function setMultiple(array $values, int $ttl = 0, bool $keepTtl = false): bool
     {
         $result = true;
         foreach ($values as $key => $value) {
-            $result2 = $this->set($key, $value, $ttl);
+            $result2 = $this->set($key, $value, $ttl, $keepTtl);
             $result = $result && $result2;
         }
         return $result;
