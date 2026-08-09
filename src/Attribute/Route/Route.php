@@ -17,8 +17,19 @@ use InvalidArgumentException;
 class Route
 {
     /**
-     * @param array<string>|string $methods
-     * @param string $uri
+     * Bir veya birden fazla HTTP metodu için route tanımlar.
+     * 
+     * $methods değeri string olarak verilirse route yalnızca belirtilen HTTP
+     * metodu ile eşleşir. Array olarak verilirse route, belirtilen HTTP
+     * metotlarından herhangi biriyle eşleşir.
+     * 
+     * Boş bir HTTP metotları dizisi verilmesi durumunda InvalidArgumentException
+     * fırlatılır.
+     * 
+     * @param array<string>|string $methods route'un eşleşeceği HTTP metodu veya metotları.
+     * @param string $uri route'un eşleşeceği URI.
+     * 
+     * @throws InvalidArgumentException $methods boş bir array ise.
      */
     public function __construct(
         public array|string $methods,

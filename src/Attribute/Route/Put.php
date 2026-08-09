@@ -15,9 +15,14 @@ use Attribute;
 #[Attribute(Attribute::TARGET_METHOD)]
 class Put extends Route
 {
+    /**
+     * HTTP PUT metodu için bir route tanımlar.
+     * 
+     * @param string $uri route'un eşleşeceği URI.
+     */
     public function __construct(
         public string $uri,
     ) {
-        parent::__construct(["PUT"], $uri);
+        parent::__construct("PUT", $uri);
     }
 }

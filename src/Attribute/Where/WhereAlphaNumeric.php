@@ -15,6 +15,12 @@ use Attribute;
 #[Attribute(Attribute::TARGET_METHOD | Attribute::IS_REPEATABLE)]
 class WhereAlphaNumeric extends Where
 {
+    /**
+     * Route parametresinin yalnızca alfabetik ve sayısal karakterlerden oluşmasını
+     * gerektiren bir eşleşme kuralı tanımlar.
+     * 
+     * @param string $key route parametresinin adı.
+     */
     public function __construct(
         public string $key,
     ) {

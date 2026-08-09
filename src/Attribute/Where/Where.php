@@ -15,6 +15,12 @@ use Attribute;
 #[Attribute(Attribute::TARGET_METHOD | Attribute::IS_REPEATABLE)]
 class Where
 {
+    /**
+     * Route parametrelerinden biri için eşleşme kuralı tanımlar.
+     *
+     * @param string $key route parametresinin adı.
+     * @param string $pattern route parametresinin eşleşeceği düzenli ifade (regex).
+     */
     public function __construct(
         public string $key,
         public string $pattern,

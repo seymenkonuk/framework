@@ -15,6 +15,12 @@ use Attribute;
 #[Attribute(Attribute::TARGET_METHOD | Attribute::IS_REPEATABLE)]
 class WhereAny extends Where
 {
+    /**
+     * Route parametresinin herhangi bir karakter dizisiyle eşleşmesini sağlayan
+     * bir eşleşme kuralı tanımlar.
+     *
+     * @param string $key route parametresinin adı.
+     */
     public function __construct(
         public string $key,
     ) {

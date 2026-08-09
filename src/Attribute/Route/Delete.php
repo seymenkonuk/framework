@@ -15,9 +15,14 @@ use Attribute;
 #[Attribute(Attribute::TARGET_METHOD)]
 class Delete extends Route
 {
+    /**
+     * HTTP DELETE metodu için bir route tanımlar.
+     * 
+     * @param string $uri route'un eşleşeceği URI.
+     */
     public function __construct(
         public string $uri,
     ) {
-        parent::__construct(["DELETE"], $uri);
+        parent::__construct("DELETE", $uri);
     }
 }

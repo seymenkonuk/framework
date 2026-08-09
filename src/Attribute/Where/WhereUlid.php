@@ -15,6 +15,12 @@ use Attribute;
 #[Attribute(Attribute::TARGET_METHOD | Attribute::IS_REPEATABLE)]
 class WhereUlid extends Where
 {
+    /**
+     * Route parametresinin geçerli bir ULID değerine uygun olmasını gerektiren
+     * bir eşleşme kuralı tanımlar.
+     * 
+     * @param string $key route parametresinin adı.
+     */
     public function __construct(
         public string $key,
     ) {
