@@ -18,9 +18,8 @@ final class SessionFlash implements IFlash
     // CONSTANTS
     // --------------------------------------------------------------------------
 
-    private const FLASH_PARENT_KEYS = ["__flash"];
-    private const OLD_FLASH_PARENT_KEYS = [...self::FLASH_PARENT_KEYS, "old"];
-    private const NEW_FLASH_PARENT_KEYS = [...self::FLASH_PARENT_KEYS, "new"];
+    private const OLD_FLASH_PARENT_KEY = "__flash_old";
+    private const NEW_FLASH_PARENT_KEY = "__flash_new";
 
     // --------------------------------------------------------------------------
     // CONSTRUCTOR
@@ -36,12 +35,12 @@ final class SessionFlash implements IFlash
 
     public function get(string $key, mixed $default = null): mixed
     {
-        return $this->session->get($key, $default, self::OLD_FLASH_PARENT_KEYS);
+        return $this->session->get($key, $default, self::OLD_FLASH_PARENT_KEY);
     }
 
     public function has(string $key): bool
     {
-        return $this->session->has($key, self::OLD_FLASH_PARENT_KEYS);
+        return $this->session->has($key, self::OLD_FLASH_PARENT_KEY);
     }
 
     // --------------------------------------------------------------------------
@@ -50,20 +49,20 @@ final class SessionFlash implements IFlash
 
     public function set(string $key, mixed $value): bool
     {
-        return $this->session->set($key, $value, self::NEW_FLASH_PARENT_KEYS);
+        return $this->session->set($key, $value, self::NEW_FLASH_PARENT_KEY);
     }
 
     public function remove(string $key): bool
     {
-        $oldRemoved = $this->session->remove($key, self::OLD_FLASH_PARENT_KEYS);
-        $newRemoved = $this->session->remove($key, self::NEW_FLASH_PARENT_KEYS);
+        $oldRemoved = $this->session->remove($key, self::OLD_FLASH_PARENT_KEY);
+        $newRemoved = $this->session->remove($key, self::NEW_FLASH_PARENT_KEY);
         return $oldRemoved || $newRemoved;
     }
 
     public function clear(): bool
     {
-        $oldCleared = $this->session->clear(self::OLD_FLASH_PARENT_KEYS);
-        $newCleared = $this->session->clear(self::NEW_FLASH_PARENT_KEYS);
+        $oldCleared = $this->session->clear(self::OLD_FLASH_PARENT_KEY);
+        $newCleared = $this->session->clear(self::NEW_FLASH_PARENT_KEY);
         return $oldCleared && $newCleared;
     }
 
@@ -73,9 +72,9 @@ final class SessionFlash implements IFlash
 
     public function age(): void
     {
-        $new = $this->session->get("new", [], self::FLASH_PARENT_KEYS);
-        $this->session->set("old", $new, self::FLASH_PARENT_KEYS);
-        $this->session->set("new", [], self::FLASH_PARENT_KEYS);
+        $new = $this->session->all(self::NEW_FLASH_PARENT_KEY);
+        $this->session->replace($new, self::OLD_FLASH_PARENT_KEY);
+        $this->session->replace([], self::NEW_FLASH_PARENT_KEY);
     }
 
     // --------------------------------------------------------------------------
