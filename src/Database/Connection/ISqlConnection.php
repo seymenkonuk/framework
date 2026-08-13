@@ -73,7 +73,7 @@ interface ISqlConnection
      *
      * @param class-string<T>|null $class kullanılacak Model sınıfı.
      *
-     * @return array<int, ($class is null ? array<string, mixed>|null : T|null)>
+     * @return array<int, ($class is null ? array<string, mixed> : T)>
      */
     public function all(?string $class = null): array;
 
@@ -90,7 +90,7 @@ interface ISqlConnection
      *
      * @param class-string<T>|null $class kullanılacak Model sınıfı.
      *
-     * @return Generator<int, ($class is null ? array<string, mixed>|null : T|null)>
+     * @return Generator<int, ($class is null ? array<string, mixed> : T)>
      */
     public function cursor(?string $class = null): Generator;
 
