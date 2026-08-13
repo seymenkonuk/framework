@@ -359,4 +359,21 @@ interface IRequest
      * @return bool istemci JSON yanıtı bekliyorsa true, aksi halde false.
      */
     public function expectsJson(): bool;
+
+    // --------------------------------------------------------------------------
+    // DERIVATION
+    // --------------------------------------------------------------------------
+
+    /**
+     * İsteğin belirtilen veriler eklenmiş yeni bir kopyasını oluşturur.
+     *
+     * Mevcut istek değiştirilmez.
+     * Belirtilen anahtarlar mevcut verilerle aynıysa yeni değerler kullanılır.
+     *
+     * @param array<string, mixed> $data yeni isteğe eklenecek veya mevcut değerlerin
+     * üzerine yazılacak veriler.
+     *
+     * @return IRequest belirtilen veriler eklenmiş yeni istek.
+     */
+    public function with(array $data): IRequest;
 }
