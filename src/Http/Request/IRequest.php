@@ -139,9 +139,12 @@ interface IRequest
     /**
      * İsteğe ait kullanıcı tarafından gönderilen tüm verileri döndürür.
      * 
-     * Döndürülen dizi body, query, params ve files alanlarını içerir.
-     * 
      * @return array{
+     *     method: string,
+     *     version: string,
+     *     path: string,
+     *     headers: array<string, string>,
+     *     cookies: array<string, mixed>,
      *     body: array<string, mixed>,
      *     query: array<string, mixed>,
      *     params: array<string, mixed>,
@@ -156,10 +159,23 @@ interface IRequest
 
     /**
      * İstek gövdesinin ham içeriğini döndürür.
-     * 
+     *
+     * Gövde üzerinde herhangi bir ayrıştırma veya dönüştürme yapılmaz.
+     *
      * @return string isteğin ham body içeriği.
      */
-    public function body(): string;
+    public function rawBody(): string;
+
+    /**
+     * İstek gövdesini Content-Type değerine göre ayrıştırarak döndürür.
+     *
+     * Content-Type değeri framework tarafından desteklenen bir formatı belirtiyorsa
+     * gövde ilgili formatın ayrıştırma metodu kullanılarak dönüştürülür.
+     * Desteklenmiyorsa boş array döndürülür.
+     *
+     * @return array<string, mixed> ayrıştırılmış body verileri.
+     */
+    public function body(): array;
 
     // --------------------------------------------------------------------------
     //  POST
