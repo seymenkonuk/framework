@@ -54,7 +54,7 @@ abstract class ValidatorRequestSchema implements IRequestSchema
             "query"  => $this->query(),
             "params" => $this->params(),
             "files"  => $this->files(),
-        ]);
+        ])->extra();
     }
 
     // --------------------------------------------------------------------------
