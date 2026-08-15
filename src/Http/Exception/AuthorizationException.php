@@ -6,7 +6,7 @@
 // Licensed under the terms of the LICENSE file in the project root directory.
 // ============================================================================
 
-namespace Seymenkonuk\Framework\Exception;
+namespace Seymenkonuk\Framework\Http\Exception;
 
 
 use Exception;
