@@ -9,6 +9,8 @@
 namespace Seymenkonuk\Framework\Routing;
 
 
+use Closure;
+
 use Seymenkonuk\Framework\Http\Controller;
 use Seymenkonuk\Framework\Http\Middleware;
 use Seymenkonuk\Framework\Http\RequestSchema\IRequestSchema;
@@ -26,7 +28,7 @@ final class Route
      *
      * @param array<string> $methods route tarafından kabul edilen HTTP metotları.
      * @param string $uri route'un URI deseni.
-     * @param array{class-string<Controller>, string}|callable(mixed...): IResponse $handler route çalıştırıldığında çağrılacak handler.
+     * @param array{class-string<Controller>, string}|Closure(mixed...): IResponse $handler route çalıştırıldığında çağrılacak handler.
      * @param array<class-string<Middleware>> $middleware route'a uygulanacak middleware sınıfları.
      * @param array<string, string> $where URI parametreleri için kullanılacak regex kuralları.
      * @param ?class-string<IRequestSchema> $schema isteği doğrulamak için kullanılacak schema sınıfı.
@@ -37,7 +39,7 @@ final class Route
     public function __construct(
         public array $methods,
         public string $uri,
-        public array $handler,
+        public array|Closure $handler,
         public array $middleware = [],
         public array $where = [],
         public ?string $schema = null,
