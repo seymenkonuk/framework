@@ -9,26 +9,27 @@
 namespace Seymenkonuk\Framework;
 
 
-use Closure;
-
-use ReflectionClass;
-use ReflectionMethod;
-use ReflectionFunction;
 use ReflectionNamedType;
 use ReflectionParameter;
 
 use RuntimeException;
 
+use Seymenkonuk\Framework\Reflection\Reflect;
+
 
 final class Container
 {
     /**
-     * @var array<string, string>
+     * İki sınıf arasındaki bağlantıları saklar.
+     *
+     * @var array<class-string, class-string>
      */
     private array $bindings = [];
 
     /**
-     * @var array<string, object>
+     * Sınıfa ait nesne örneklerini saklar.
+     *
+     * @var array<class-string, object>
      */
     private array $instances = [];
 
@@ -36,85 +37,162 @@ final class Container
     // BINDINGS
     // --------------------------------------------------------------------------
 
+    /**
+     * Bir sınıfı başka bir sınıfa bağlar.
+     *
+     * Bu kayıt sonrasında ilgili sınıf talep edildiğinde bağlantılı
+     * sınıf döndürülür.
+     *
+     * Aynı sınıf için daha önce bağlantı tanımlanmışsa mevcut kayıt güncellenir.
+     *
+     * @template T of object
+     * 
+     * @param class-string<T> $abstract çözümlenecek sınıf.
+     * @param class-string<T> $concrete oluşturulacak sınıf.
+     *
+     * @return void
+     */
     public function bind(string $abstract, string $concrete): void
     {
         $this->bindings[$abstract] = $concrete;
     }
 
-    public function instance(string $abstract, object $instance): void
+    /**
+     * Belirtilen sınıf için hazır bir nesne örneği kaydeder.
+     *
+     * Bu kayıt sonrasında ilgili sınıf talep edildiğinde her zaman
+     * aynı nesne örneği döndürülür.
+     *
+     * Daha önce kayıt edilmiş bir örnek varsa üzerine yazılır.
+     * 
+     * @template T of object
+     *
+     * @param class-string<T> $class ilişkilendirilecek sınıf.
+     * @param T $instance kullanılacak nesne örneği.
+     *
+     * @return void
+     */
+    public function instance(string $class, object $instance): void
     {
-        $this->instances[$abstract] = $instance;
+        $this->instances[$class] = $instance;
     }
 
     // --------------------------------------------------------------------------
     // RESOLUTION
     // --------------------------------------------------------------------------
 
-    public function make(string $abstract): object
+    /**
+     * Belirtilen sınıf için bir nesne örneği döndürür.
+     *
+     * Kayıtlı bir örnek mevcutsa doğrudan döndürülür.
+     * Aksi halde ilgili somut sınıf oluşturulur ve bağımlılıkları çözülür.
+     * 
+     * @template T of object
+     *
+     * @param class-string<T> $class oluşturulacak veya çözümlenecek sınıf.
+     *
+     * @return T oluşturulan veya mevcut nesne örneği.
+     */
+    public function make(string $class): object
     {
         // Daha önce instance olarak kayıtlıysa
-        if (isset($this->instances[$abstract])) {
-            return $this->instances[$abstract];
+        $instance = $this->getInstance($class);
+        if (isset($instance)) {
+            return $instance;
         }
 
         // Binding varsa
-        if (isset($this->bindings[$abstract])) {
-            $abstract = $this->bindings[$abstract];
+        if (isset($this->bindings[$class])) {
+            $class = $this->getBinding($class);
         }
 
-        return $this->build($abstract);
+        return $this->build($class);
     }
 
     // --------------------------------------------------------------------------
-    // CALLABLE INJECTION
+    // INVOCATION
     // --------------------------------------------------------------------------
 
     /**
-     * @param Closure|array{0: string, 1: string} $callable
-     * @param array<string, mixed> $parameters
+     * Belirtilen callable'ı verilen parametrelerle çalıştırır.
+     *
+     * Callable tarafından ihtiyaç duyulan parametreler container üzerinden
+     * çözümlenebilir.
+     *
+     * $parameters ile verilen değerler callable'a aktarılacak parametreler
+     * için kullanılır.
+     *
+     * @template T
+     *
+     * @param callable(mixed...): T $callable çalıştırılacak callable.
+     * @param array<string, mixed> $parameters callable'a aktarılacak parametreler.
+     *
+     * @return T callable'ın döndürdüğü değer
      */
-    public function call(Closure|array $callable, array $parameters = []): mixed
+    public function call(callable $callable, array $parameters = []): mixed
     {
-        // Method ise
-        if (is_array($callable)) {
-            /** @var array{0: string, 1: string} $callable */
-            [$object, $method] = $callable;
-
-            $object = $this->make($object);
-            $reflection = new ReflectionMethod($object, $method);
-
-            $dependencies = $this->resolveParameters(
-                $reflection->getParameters(),
-                $parameters
-            );
-
-            return $reflection->invokeArgs(
-                $object,
-                $dependencies
-            );
-        }
-
-        // Function ise
-        $reflection = new ReflectionFunction($callable);
+        $reflection = Reflect::callable($callable);
 
         $dependencies = $this->resolveParameters(
             $reflection->getParameters(),
-            $parameters
+            $parameters,
         );
 
-        return $reflection->invokeArgs(
-            $dependencies
-        );
+        return Reflect::invoke($callable, $dependencies);
     }
 
     // --------------------------------------------------------------------------
     // INTERNAL
     // --------------------------------------------------------------------------
 
+    /**
+     * Kayıtlı nesne örneğini döndürür.
+     *
+     * @template T of object
+     *
+     * @param class-string<T> $class nesne örneğinin alınacağı sınıf.
+     *
+     * @return ?T kayıtlı nesne örneği veya null.
+     */
+    private function getInstance(string $class): ?object
+    {
+        // @phpstan-ignore return.type
+        return $this->instances[$class] ?? null;
+    }
+
+    /**
+     * Sınıf için kayıtlı bağlantıyı döndürür.
+     *
+     * @template T of object
+     *
+     * @param class-string<T> $class bağlantısı alınacak sınıf.
+     *
+     * @return class-string<T> bağlantılı sınıf veya verilen sınıf.
+     */
+    private function getBinding(string $class): string
+    {
+        // @phpstan-ignore return.type
+        return $this->bindings[$class] ?? $class;
+    }
+
+    /**
+     * Belirtilen sınıftan bir nesne oluşturmaya çalışır.
+     *
+     * Sınıfın constructor bağımlılıkları container üzerinden çözülür.
+     *
+     * Sınıf oluşturulamazsa RuntimeException fırlatılır.
+     * 
+     * @template T of object
+     *
+     * @param class-string<T> $class oluşturulacak sınıf.
+     *
+     * @throws RuntimeException sınıf oluşturulamadığında.
+     *
+     * @return T oluşturulan nesne örneği.
+     */
     private function build(string $class): object
     {
-        // @phpstan-ignore-next-line
-        $reflection = new ReflectionClass($class);
+        $reflection = Reflect::class($class);
 
         if (!$reflection->isInstantiable()) {
             throw new RuntimeException(
@@ -132,15 +210,19 @@ final class Container
             $constructor->getParameters()
         );
 
-        return $reflection->newInstanceArgs(
-            $dependencies
-        );
+        return Reflect::new($class, $dependencies);
     }
 
     /**
-     * @param array<ReflectionParameter> $parameters
-     * @param array<string, mixed> $provided
-     * @return array<mixed>
+     * Belirtilen reflection parametreleri için gerekli bağımlılıkları çözümler.
+     *
+     * Sağlanan parametreler öncelikli olarak kullanılır; eksik parametreler
+     * container üzerinden çözümlenir.
+     *
+     * @param array<ReflectionParameter> $parameters çözümlenecek parametreler.
+     * @param array<string, mixed> $provided dışarıdan sağlanan parametreler.
+     *
+     * @return array<int, mixed> çözümlenen parametre değerleri.
      */
     private function resolveParameters(array $parameters, array $provided = []): array
     {
@@ -157,7 +239,9 @@ final class Container
             $type = $parameter->getType();
 
             if ($type instanceof ReflectionNamedType && !$type->isBuiltin()) {
-                $resolved[] = $this->make($type->getName());
+                /** @var class-string $className */
+                $className = $type->getName();
+                $resolved[] = $this->make($className);
                 continue;
             }
 
