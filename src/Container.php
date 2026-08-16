@@ -33,6 +33,13 @@ final class Container
      */
     private array $instances = [];
 
+    /**
+     * Singleton instance'larını oluşturmak için kullanılan factory'leri tutar.
+     *
+     * @var array<class-string, callable(mixed...): object>
+     */
+    private array $singletons = [];
+
     // --------------------------------------------------------------------------
     // BINDINGS
     // --------------------------------------------------------------------------
@@ -77,6 +84,21 @@ final class Container
         $this->instances[$class] = $instance;
     }
 
+    /**
+     * Belirtilen sınıf için singleton factory kaydeder.
+     *
+     * @template T of object
+     *
+     * @param class-string<T> $class singleton olarak çözümlenecek sınıf.
+     * @param callable(mixed...): T $factory singleton instance'ını oluşturacak callable.
+     *
+     * @return void
+     */
+    public function singleton(string $class, callable $factory): void
+    {
+        $this->singletons[$class] = $factory;
+    }
+
     // --------------------------------------------------------------------------
     // RESOLUTION
     // --------------------------------------------------------------------------
@@ -95,15 +117,21 @@ final class Container
      */
     public function make(string $class): object
     {
-        // Daha önce instance olarak kayıtlıysa
+        // Bağlantılı sınıfı al.
+        $class = $this->getBinding($class);
+
+        // Daha önce oluşturulmuş nesne örneğini al.
         $instance = $this->getInstance($class);
         if (isset($instance)) {
             return $instance;
         }
 
-        // Binding varsa
-        if (isset($this->bindings[$class])) {
-            $class = $this->getBinding($class);
+        // Singleton factory'sini al.
+        $factory = $this->getSingleton($class);
+        if (isset($factory)) {
+            $instance = $this->call($factory);
+            $this->instances[$class] = $instance;
+            return $instance;
         }
 
         return $this->build($class);
@@ -173,6 +201,21 @@ final class Container
     {
         // @phpstan-ignore return.type
         return $this->bindings[$class] ?? $class;
+    }
+
+    /**
+     * Belirtilen sınıf için kayıtlı singleton factory'yi döndürür.
+     *
+     * @template T of object
+     *
+     * @param class-string<T> $class singleton factory'si alınacak sınıf.
+     *
+     * @return (callable(mixed...): T)|null kayıtlı singleton factory veya null.
+     */
+    private function getSingleton(string $class): ?callable
+    {
+        // @phpstan-ignore return.type
+        return $this->singletons[$class] ?? null;
     }
 
     /**
