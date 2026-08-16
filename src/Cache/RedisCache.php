@@ -9,6 +9,7 @@
 namespace Seymenkonuk\Framework\Cache;
 
 
+use Closure;
 use Predis\Client as Predis;
 
 
@@ -213,7 +214,7 @@ final class RedisCache implements ICache
     // REMEMBER
     // --------------------------------------------------------------------------
 
-    public function remember(string $key, int $ttl, callable $callback): mixed
+    public function remember(string $key, int $ttl, Closure $callback): mixed
     {
         // Cache'de Varsa Onu Getir
         if ($this->has($key)) {

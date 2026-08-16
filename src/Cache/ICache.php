@@ -9,6 +9,9 @@
 namespace Seymenkonuk\Framework\Cache;
 
 
+use Closure;
+
+
 interface ICache
 {
     // --------------------------------------------------------------------------
@@ -249,11 +252,11 @@ interface ICache
      * 
      * @param string $key cache anahtarı.
      * @param int $ttl değerin saniye cinsinden yaşam süresi.
-     * @param callable(): T $callback cache'de bulunamazsa getirilecek değer.
+     * @param Closure(): T $callback cache'de bulunamazsa getirilecek değer.
      * 
      * @return T cache'deki veya callback tarafından üretilen değer.
      */
-    public function remember(string $key, int $ttl, callable $callback): mixed;
+    public function remember(string $key, int $ttl, Closure $callback): mixed;
 
     // --------------------------------------------------------------------------
     // DESTROY
