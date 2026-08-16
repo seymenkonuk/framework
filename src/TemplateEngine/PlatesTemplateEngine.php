@@ -31,6 +31,16 @@ final class PlatesTemplateEngine implements ITemplateEngine
     //  CONSTRUCTOR
     // --------------------------------------------------------------------------
 
+    /**
+     * Belirtilen kök dizin ile template motorunu başlatır.
+     *
+     * Template dosyaları bu dizin altında `Components/`, `Errors/` ve `Pages/`
+     * klasörlerinde bulunmalıdır.
+     *
+     * @param string $rootDir template dosyalarının kök dizini.
+     *
+     * @return void
+     */
     public function __construct(
         protected string $rootDir,
     ) {
