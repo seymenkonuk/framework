@@ -9,6 +9,8 @@
 namespace Seymenkonuk\Framework;
 
 
+use Closure;
+
 use ReflectionNamedType;
 use ReflectionParameter;
 
@@ -34,9 +36,9 @@ final class Container
     private array $instances = [];
 
     /**
-     * Singleton instance'larını oluşturmak için kullanılan factory'leri tutar.
+     * Sınıfa ait nesne örneğini üreten işlevleri saklar.
      *
-     * @var array<class-string, callable(mixed...): object>
+     * @var array<class-string, Closure(mixed...): object>
      */
     private array $singletons = [];
 
@@ -85,16 +87,20 @@ final class Container
     }
 
     /**
-     * Belirtilen sınıf için singleton factory kaydeder.
+     * Belirtilen sınıf için nesne örneği döndüren Closure kaydeder.
+     * 
+     * Bu kayıt sonrasında ilgili sınıf ilk kez talep edildiğinde işlev
+     * çalıştırılır, oluşturulan nesne örneği saklanır ve döndürülür. 
+     * Sonraki taleplerde aynı nesne örneği döndürülür.
      *
      * @template T of object
      *
-     * @param class-string<T> $class singleton olarak çözümlenecek sınıf.
-     * @param callable(mixed...): T $factory singleton instance'ını oluşturacak callable.
+     * @param class-string<T> $class çözümlenecek sınıf.
+     * @param Closure(mixed...): T $factory nesne örneğini oluşturacak işlev.
      *
      * @return void
      */
-    public function singleton(string $class, callable $factory): void
+    public function singleton(string $class, Closure $factory): void
     {
         $this->singletons[$class] = $factory;
     }
@@ -142,31 +148,31 @@ final class Container
     // --------------------------------------------------------------------------
 
     /**
-     * Belirtilen callable'ı verilen parametrelerle çalıştırır.
+     * Belirtilen işlevi verilen parametrelerle çalıştırır.
      *
-     * Callable tarafından ihtiyaç duyulan parametreler container üzerinden
+     * İşlev tarafından ihtiyaç duyulan parametreler container üzerinden
      * çözümlenebilir.
      *
-     * $parameters ile verilen değerler callable'a aktarılacak parametreler
+     * $parameters ile verilen değerler işleve aktarılacak parametreler
      * için kullanılır.
      *
      * @template T
      *
-     * @param callable(mixed...): T $callable çalıştırılacak callable.
-     * @param array<string, mixed> $parameters callable'a aktarılacak parametreler.
+     * @param Closure(mixed...): T $callback çalıştırılacak işlev.
+     * @param array<string, mixed> $parameters işleve aktarılacak parametreler.
      *
-     * @return T callable'ın döndürdüğü değer
+     * @return T işlevin döndürdüğü değer
      */
-    public function call(callable $callable, array $parameters = []): mixed
+    public function call(Closure $callback, array $parameters = []): mixed
     {
-        $reflection = Reflect::callable($callable);
+        $reflection = Reflect::callable($callback);
 
         $dependencies = $this->resolveParameters(
             $reflection->getParameters(),
             $parameters,
         );
 
-        return Reflect::invoke($callable, $dependencies);
+        return Reflect::invoke($callback, $dependencies);
     }
 
     // --------------------------------------------------------------------------
@@ -210,9 +216,9 @@ final class Container
      *
      * @param class-string<T> $class singleton factory'si alınacak sınıf.
      *
-     * @return (callable(mixed...): T)|null kayıtlı singleton factory veya null.
+     * @return (Closure(mixed...): T)|null kayıtlı singleton factory veya null.
      */
-    private function getSingleton(string $class): ?callable
+    private function getSingleton(string $class): ?Closure
     {
         // @phpstan-ignore return.type
         return $this->singletons[$class] ?? null;
@@ -222,35 +228,19 @@ final class Container
      * Belirtilen sınıftan bir nesne oluşturmaya çalışır.
      *
      * Sınıfın constructor bağımlılıkları container üzerinden çözülür.
-     *
-     * Sınıf oluşturulamazsa RuntimeException fırlatılır.
      * 
      * @template T of object
      *
      * @param class-string<T> $class oluşturulacak sınıf.
      *
-     * @throws RuntimeException sınıf oluşturulamadığında.
-     *
      * @return T oluşturulan nesne örneği.
      */
     private function build(string $class): object
     {
-        $reflection = Reflect::class($class);
-
-        if (!$reflection->isInstantiable()) {
-            throw new RuntimeException(
-                "Class [$class] is not instantiable."
-            );
-        }
-
-        $constructor = $reflection->getConstructor();
-
-        if ($constructor === null) {
-            return new $class();
-        }
+        $constructor = Reflect::constructor($class);
 
         $dependencies = $this->resolveParameters(
-            $constructor->getParameters()
+            $constructor?->getParameters() ?? [],
         );
 
         return Reflect::new($class, $dependencies);
