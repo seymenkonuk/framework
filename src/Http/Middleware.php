@@ -9,11 +9,24 @@
 namespace Seymenkonuk\Framework\Http;
 
 
+use Seymenkonuk\Framework\Http\Request\IRequest;
+use Seymenkonuk\Framework\Http\Response\IResponse;
+
+
 abstract class Middleware
 {
     // --------------------------------------------------------------------------
     // HANDLE
     // --------------------------------------------------------------------------
 
-    // abstract public function handle(Request $request, callable $next): Response;
+    /**
+     * Gelen isteği işler ve middleware zincirinin devamını çalıştırır.
+     *
+     * @param IRequest $request işlenecek HTTP isteği.
+     * @param IResponse $response middleware zincirine aktarılacak response.
+     * @param callable(IRequest, IResponse): IResponse $next sıradaki middleware'i veya handler'ı çalıştıracak callable.
+     *
+     * @return IResponse oluşturulan veya middleware zincirinden dönen response.
+     */
+    abstract public function handle(IRequest $request, IResponse $response, callable $next): IResponse;
 }
