@@ -30,6 +30,16 @@ final class RedisCache implements ICache
     // DEPENDENCIES
     // --------------------------------------------------------------------------
 
+    /**
+     * Belirtilen bilgilerle Redis bağlantısını başlatır.
+     *
+     * @param string $host Redis sunucusunun adresi.
+     * @param string $port Redis sunucusunun portu.
+     * @param ?string $password Redis sunucusu için kullanılacak şifre.
+     * @param int $databaseId kullanılacak Redis veritabanının kimliği.
+     *
+     * @return void
+     */
     public function __construct(
         string $host,
         string $port,
