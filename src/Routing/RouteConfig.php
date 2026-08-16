@@ -11,5 +11,5 @@ namespace Seymenkonuk\Framework\Routing;
 
 abstract class RouteConfig
 {
-    abstract public function register(Router $router);
+    abstract public function register(Router $router): void;
 }
