@@ -12,6 +12,7 @@ namespace Seymenkonuk\Framework\Database\Connection;
 use PDO;
 use PDOStatement;
 
+use Closure;
 use Throwable;
 use Generator;
 
@@ -205,7 +206,7 @@ final class MysqlConnection implements ISqlConnection
         }
     }
 
-    public function transaction(callable $callback): mixed
+    public function transaction(Closure $callback): mixed
     {
         try {
             $this->begin();

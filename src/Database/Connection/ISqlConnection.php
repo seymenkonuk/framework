@@ -9,6 +9,7 @@
 namespace Seymenkonuk\Framework\Database\Connection;
 
 
+use Closure;
 use Generator;
 
 use Seymenkonuk\Framework\Database\Model;
@@ -163,12 +164,12 @@ interface ISqlConnection
      *
      * @template T
      *
-     * @param callable(ISqlConnection): T $callback veritabanı işlemi içerisinde
+     * @param Closure(ISqlConnection): T $callback veritabanı işlemi içerisinde
      * çalıştırılacak callback.
      *
      * @return T callback tarafından döndürülen değer.
      */
-    public function transaction(callable $callback): mixed;
+    public function transaction(Closure $callback): mixed;
     
     // --------------------------------------------------------------------------
     // DRIVER
