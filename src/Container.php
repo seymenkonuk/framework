@@ -165,7 +165,7 @@ final class Container
      */
     public function call(Closure $callback, array $parameters = []): mixed
     {
-        $reflection = Reflect::callable($callback);
+        $reflection = Reflect::closure($callback);
 
         $dependencies = $this->resolveParameters(
             $reflection->getParameters(),
