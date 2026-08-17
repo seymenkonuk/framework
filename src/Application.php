@@ -19,6 +19,7 @@ use ReflectionIntersectionType;
 
 use Seymenkonuk\Framework\Http\Request\IRequest;
 use Seymenkonuk\Framework\Http\Response\IResponse;
+use Seymenkonuk\Framework\Http\Response\IResponseState;
 use Seymenkonuk\Framework\Routing\RouteConfig;
 use Seymenkonuk\Framework\Routing\Router;
 
@@ -190,9 +191,9 @@ final class Application
      *
      * Gelen isteği işler ve oluşan response'u gönderir.
      *
-     * @return void
+     * @return IResponseState gönderilen response'un state'i.
      */
-    public function run(): void
+    public function run(): IResponseState
     {
         $request = $this->container->make(IRequest::class);
         $response = $this->container->make(IResponse::class);
@@ -210,6 +211,7 @@ final class Application
             // Controller'ı Çağır
             $response = $this->router->dispatch($request);
         } catch (Throwable $e) {
+            // Exception Handler'ı Çağır
             $response = $this->handleException($e);
         }
 
@@ -218,8 +220,8 @@ final class Application
             ob_end_clean();
         }
 
-        // Response'u Göster
-        $response->send();
+        // Response'u Gönder
+        return  $response->send();
     }
 
     // --------------------------------------------------------------------------
