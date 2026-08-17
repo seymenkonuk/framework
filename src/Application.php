@@ -12,7 +12,6 @@ namespace Seymenkonuk\Framework;
 use Closure;
 use Throwable;
 
-use ReflectionFunction;
 use ReflectionNamedType;
 use ReflectionUnionType;
 use ReflectionIntersectionType;
@@ -20,6 +19,7 @@ use ReflectionIntersectionType;
 use Seymenkonuk\Framework\Http\Request\IRequest;
 use Seymenkonuk\Framework\Http\Response\IResponse;
 use Seymenkonuk\Framework\Http\Response\IResponseState;
+use Seymenkonuk\Framework\Reflection\Reflect;
 use Seymenkonuk\Framework\Routing\RouteConfig;
 use Seymenkonuk\Framework\Routing\Router;
 
@@ -166,7 +166,7 @@ final class Application
      */
     public function withException(Closure $callback): self
     {
-        $reflection = new ReflectionFunction($callback);
+        $reflection = Reflect::closure($callback);
 
         foreach ($reflection->getParameters() as $parameter) {
             if ($parameter->getName() !== "exception") {
