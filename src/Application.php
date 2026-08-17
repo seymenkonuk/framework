@@ -49,13 +49,45 @@ final class Application
     }
 
     // --------------------------------------------------------------------------
-    // ROUTE CONFIG CALLBACK
+    // ROUTE CONFIGURATION
     // --------------------------------------------------------------------------
 
     /** @param class-string<RouteConfig> $routeConfig */
     public function withRouting(string $routeConfig): self
     {
         $this->routeConfig = $routeConfig;
+        return $this;
+    }
+
+    // --------------------------------------------------------------------------
+    // CONTAINER CONFIGURATION
+    // --------------------------------------------------------------------------
+
+    /** @param array<class-string, class-string> $bindings */
+    public function withBindings(array $bindings): self
+    {
+        foreach ($bindings as $abstract => $concrete) {
+            $this->container->bind($abstract, $concrete);
+        }
+        return $this;
+    }
+
+    /** @param array<class-string, object> $instances */
+    public function withInstances(array $instances): self
+    {
+        foreach ($instances as $class => $instance) {
+            $this->container->instance($class, $instance);
+        }
+
+        return $this;
+    }
+
+    /** @param array<class-string, Closure(mixed...): object> $singletons */
+    public function withSingletons(array $singletons): self
+    {
+        foreach ($singletons as $class => $factory) {
+            $this->container->singleton($class, $factory);
+        }
         return $this;
     }
 
