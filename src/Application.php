@@ -78,6 +78,16 @@ final class Application
     // --------------------------------------------------------------------------
 
     /**
+     * Uygulamanın router'ını döndürür.
+     *
+     * @return Router uygulamanın router'ı.
+     */
+    public function router(): Router
+    {
+        return $this->router;
+    }
+
+    /**
      * Uygulama tarafından kullanılacak route yapılandırmasını tanımlar.
      *
      * @param class-string<RouteConfig> $routeConfig kullanılacak route yapılandırma sınıfı.
