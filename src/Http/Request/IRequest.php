@@ -352,6 +352,40 @@ interface IRequest
     public function hasFile(string $key): bool;
 
     // --------------------------------------------------------------------------
+    //  SERVER
+    // --------------------------------------------------------------------------
+
+    /**
+     * Belirtilen server bilgisini döndürür.
+     * 
+     * Server bilgisi mevcut değilse $default değeri döndürülür.
+     * 
+     * @template T
+     * 
+     * @param string $key okunacak server bilgisinin anahtarı.
+     * @param T|null $default bilgi mevcut olmadığında döndürülecek değer.
+     * 
+     * @return ($default is null ? mixed : T) server bilgisi veya varsayılan değer.
+     */
+    public function server(string $key, mixed $default = null): mixed;
+
+    /**
+     * Tüm server bilgilerini döndürür.
+     * 
+     * @return array<string, mixed> server bilgileri.
+     */
+    public function allServer(): array;
+
+    /**
+     * Belirtilen server bilgisinin mevcut olup olmadığını döndürür.
+     * 
+     * @param string $key kontrol edilecek server bilgisinin anahtarı.
+     * 
+     * @return bool server bilgisi mevcutsa true, aksi halde false.
+     */
+    public function hasServer(string $key): bool;
+
+    // --------------------------------------------------------------------------
     //  HELPERS
     // --------------------------------------------------------------------------
 
