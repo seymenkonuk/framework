@@ -29,19 +29,43 @@ final class Application
     // PROPERTIES
     // --------------------------------------------------------------------------
 
+    /**
+     * Uygulamanın bağımlılıklarını çözümlemek için kullanılan container.
+     * 
+     * @var Container
+     */
     protected Container $container;
+
+    /**
+     * Uygulamanın route'larını yöneten router.
+     * 
+     * @var Router
+     */
     protected Router $router;
 
-    /** @var class-string<RouteConfig> */
+    /**
+     * Uygulama tarafından kullanılacak route yapılandırma sınıfını saklar.
+     *
+     * @var ?class-string<RouteConfig>
+     */
     protected ?string $routeConfig = null;
 
-    /** @var array<string, Closure(mixed...): IResponse> */
+    /**
+     * Exception türleri için tanımlanan handler'ları saklar.
+     *
+     * @var array<string, Closure(mixed...): IResponse>
+     */
     protected array $exceptionCallbacks = [];
 
     // --------------------------------------------------------------------------
     // CONSTRUCTOR
     // --------------------------------------------------------------------------
 
+    /**
+     * Yeni bir application örneği oluşturur.
+     *
+     * @return void
+     */
     public function __construct()
     {
         $this->container = new Container();
@@ -52,7 +76,13 @@ final class Application
     // ROUTE CONFIGURATION
     // --------------------------------------------------------------------------
 
-    /** @param class-string<RouteConfig> $routeConfig */
+    /**
+     * Uygulama tarafından kullanılacak route yapılandırmasını tanımlar.
+     *
+     * @param class-string<RouteConfig> $routeConfig kullanılacak route yapılandırma sınıfı.
+     *
+     * @return self
+     */
     public function withRouting(string $routeConfig): self
     {
         $this->routeConfig = $routeConfig;
@@ -63,7 +93,13 @@ final class Application
     // CONTAINER CONFIGURATION
     // --------------------------------------------------------------------------
 
-    /** @param array<class-string, class-string> $bindings */
+    /**
+     * Container'a birden fazla sınıf bağlantısı kaydeder.
+     *
+     * @param array<class-string, class-string> $bindings sınıf ve bağlantılı sınıf eşleşmeleri.
+     *
+     * @return self
+     */
     public function withBindings(array $bindings): self
     {
         foreach ($bindings as $abstract => $concrete) {
@@ -72,7 +108,13 @@ final class Application
         return $this;
     }
 
-    /** @param array<class-string, object> $instances */
+    /**
+     * Container'a birden fazla nesne örneği kaydeder.
+     *
+     * @param array<class-string, object> $instances sınıf ve nesne örneği eşleşmeleri.
+     *
+     * @return self
+     */
     public function withInstances(array $instances): self
     {
         foreach ($instances as $class => $instance) {
@@ -82,7 +124,13 @@ final class Application
         return $this;
     }
 
-    /** @param array<class-string, Closure(mixed...): object> $singletons */
+    /**
+     * Container'a birden fazla singleton factory'si kaydeder.
+     *
+     * @param array<class-string, Closure(mixed...): object> $singletons sınıf ve factory eşleşmeleri.
+     *
+     * @return self
+     */
     public function withSingletons(array $singletons): self
     {
         foreach ($singletons as $class => $factory) {
@@ -95,7 +143,16 @@ final class Application
     // GLOBAL EXCEPTION HANDLER
     // --------------------------------------------------------------------------
 
-    /** @param Closure(mixed...): IResponse $callback */
+    /**
+     * Global exception handler kaydeder.
+     *
+     * Callback'in `exception` adında bir parametresi bulunmalıdır.
+     * Bu parametrenin türüyle eşleşen exception'lar callback tarafından yakalanır.
+     *
+     * @param Closure(mixed...): IResponse $callback exception'ları işleyecek callback.
+     *
+     * @return self
+     */
     public function withException(Closure $callback): self
     {
         $reflection = new ReflectionFunction($callback);
@@ -128,6 +185,13 @@ final class Application
     // RUN
     // --------------------------------------------------------------------------
 
+    /**
+     * Uygulamayı çalıştırır.
+     *
+     * Gelen isteği işler ve oluşan response'u gönderir.
+     *
+     * @return void
+     */
     public function run(): void
     {
         $request = $this->container->make(IRequest::class);
@@ -158,6 +222,19 @@ final class Application
         $response->send();
     }
 
+    // --------------------------------------------------------------------------
+    // INTERNAL
+    // --------------------------------------------------------------------------
+
+    /**
+     * Verilen exception için kayıtlı handler'ı çalıştırır.
+     *
+     * Eşleşen bir handler bulunamazsa exception yeniden fırlatılır.
+     *
+     * @param Throwable $e işlenecek exception.
+     *
+     * @return IResponse exception handler tarafından oluşturulan response.
+     */
     private function handleException(Throwable $e): IResponse
     {
         foreach ($this->exceptionCallbacks as $exceptionClass => $callback) {
