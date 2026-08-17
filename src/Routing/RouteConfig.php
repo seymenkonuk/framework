@@ -11,5 +11,12 @@ namespace Seymenkonuk\Framework\Routing;
 
 abstract class RouteConfig
 {
+    /**
+     * Route yapılandırmalarını router'a kaydeder.
+     *
+     * @param Router $router route'ların kaydedileceği router.
+     *
+     * @return void
+     */
     abstract public function register(Router $router): void;
 }
