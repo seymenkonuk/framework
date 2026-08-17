@@ -10,7 +10,6 @@ namespace Seymenkonuk\Framework\Reflection;
 
 
 use Closure;
-use LogicException;
 use ReflectionClass;
 use ReflectionFunction;
 use ReflectionMethod;
@@ -90,45 +89,23 @@ final class Reflect
     }
 
     // --------------------------------------------------------------------------
-    // CALLABLE
+    // HANDLER
     // --------------------------------------------------------------------------
 
     /**
-     * Belirtilen callable için reflection nesnesi döndürür.
+     * Belirtilen handler için reflection nesnesi döndürür.
      *
-     * @param callable|array{class-string, string} $callable reflection nesnesi oluşturulacak callable.
+     * @param Closure|array{class-string, string} $handler reflection nesnesi oluşturulacak handler.
      *
-     * @return ReflectionFunction|ReflectionMethod callable'ın reflection nesnesi.
+     * @return ReflectionFunction|ReflectionMethod handler'ın reflection nesnesi.
      */
-    public static function callable(callable|array $callable): ReflectionFunction|ReflectionMethod
+    public static function handler(Closure|array $handler): ReflectionFunction|ReflectionMethod
     {
-        // function() {} gibi closure'ler
-        if ($callable instanceof Closure) {
-            return self::closure($callable);
+        if ($handler instanceof Closure) {
+            return self::closure($handler);
         }
 
-        // "strlen" gibi fonksiyon isimleri
-        if (is_string($callable) && !str_contains($callable, "::")) {
-            return new ReflectionFunction($callable);
-        }
-
-        // __invoke metodu bulunan bir objeler
-        if (is_object($callable)) {
-            return self::method($callable, "__invoke");
-        }
-
-        // [Class::name, $methodName] veya [$object, $methodName] gibi metotlar
-        if (is_array($callable)) {
-            return self::method($callable[0], $callable[1]);
-        }
-
-        // "DenemeClass::methodName" gibi metot isimleri
-        if (is_string($callable) && str_contains($callable, "::")) {
-            return new ReflectionMethod($callable);
-        }
-
-        // Yukarıdaki İhtimaller Tüm Durumları Zaten Kapsıyor
-        throw new LogicException("Unsupported callable type.");
+        return self::method($handler[0], $handler[1]);
     }
 
     // --------------------------------------------------------------------------
@@ -136,43 +113,19 @@ final class Reflect
     // --------------------------------------------------------------------------
 
     /**
-     * Belirtilen callable'ı verilen parametrelerle çalıştırır.
+     * Belirtilen callback'ı verilen parametrelerle çalıştırır.
      *
      * @template T
      *
-     * @param callable(mixed...): T $callable çalıştırılacak callable.
-     * @param array<int, mixed> $parameters callable'a aktarılacak parametreler.
+     * @param Closure(mixed...): T $callback çalıştırılacak callback.
+     * @param array<int, mixed> $parameters callback'a aktarılacak parametreler.
      *
-     * @return T callable tarafından döndürülen değer.
+     * @return T callback tarafından döndürülen değer.
      */
-    public static function invoke(callable $callable, array $parameters): mixed
+    public static function invoke(Closure $callback, array $parameters): mixed
     {
-        $reflection = self::callable($callable);
-
-        // Fonksiyonu Çağır
-        if ($reflection instanceof ReflectionFunction) {
-            return $reflection->invokeArgs($parameters);
-        }
-
-        // Objenin __invoke Metodunu Çağır
-        if (is_object($callable)) {
-            return $reflection->invokeArgs($callable, $parameters);
-        }
-
-        // Class'a Ait Bir Metotsa
-        if (is_array($callable)) {
-            // Statik Metotsa Null Verilmeli Değilse Obje
-            $object = is_object($callable[0]) ? $callable[0] : null;
-            return $reflection->invokeArgs($object, $parameters);
-        }
-
-        // "DenemeClass::methodName" gibi metot isimleri
-        if (is_string($callable) && str_contains($callable, "::")) {
-            return $reflection->invokeArgs(null, $parameters);
-        }
-
-        // Yukarıdaki İhtimaller Tüm Durumları Zaten Kapsıyor
-        throw new LogicException("Unsupported callable type.");
+        $reflection = self::closure($callback);
+        return $reflection->invokeArgs($parameters);
     }
 
     // --------------------------------------------------------------------------
