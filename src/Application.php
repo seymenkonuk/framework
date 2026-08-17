@@ -17,14 +17,10 @@ use ReflectionNamedType;
 use ReflectionUnionType;
 use ReflectionIntersectionType;
 
-use Predis\Client as Redis;
-
-use Seymenkonuk\Framework\Cache\ICache;
-use Seymenkonuk\Framework\Cache\RedisCache;
-
-use Seymenkonuk\Validator\Localization\FileLoader;
-use Seymenkonuk\Validator\Localization\Translator;
-use Seymenkonuk\Validator\Validator\Validator;
+use Seymenkonuk\Framework\Http\Request\IRequest;
+use Seymenkonuk\Framework\Http\Response\IResponse;
+use Seymenkonuk\Framework\Routing\RouteConfig;
+use Seymenkonuk\Framework\Routing\Router;
 
 
 final class Application
@@ -33,73 +29,30 @@ final class Application
     // PROPERTIES
     // --------------------------------------------------------------------------
 
-    protected Session $session;
-    protected ICache $cache;
-    protected Database $database;
-    protected Request $request;
-    protected Response $response;
     protected Container $container;
     protected Router $router;
-    protected Validator $validator;
 
-    protected ?Closure $dbConnectCallback = null;
+    /** @var class-string<RouteConfig> */
     protected ?string $routeConfig = null;
-    /** @var array<string, Closure(): Response> $exceptionCallbacks */
+
+    /** @var array<string, Closure(mixed...): IResponse> */
     protected array $exceptionCallbacks = [];
 
     // --------------------------------------------------------------------------
     // CONSTRUCTOR
     // --------------------------------------------------------------------------
 
-    private function __construct(protected string $basePath)
+    public function __construct()
     {
-        $this->session = new Session();
-        $this->database = new Database();
-        $this->request = new Request();
-        $this->response = new Response(new TemplateEngine($basePath));
         $this->container = new Container();
         $this->router = new Router($this->container);
-
-        $this->validator = new Validator(new Translator(
-            new FileLoader(),
-            "tr",
-        ));
-
-        $redisConfig = [
-            "host" => getenv("REDIS_HOST") ?: "127.0.0.1",
-            "port" => getenv("REDIS_PORT") ?: "6379",
-        ];
-
-        $redisPassword = getenv("REDIS_PASSWORD") ?: "";
-
-        if ($redisPassword !== "") {
-            $redisConfig["password"] = $redisPassword;
-        }
-
-        $this->cache = new RedisCache(new Redis($redisConfig));
-
-        $this->container->bind(ICache::class, RedisCache::class);
-        $this->container->instance(ICache::class, $this->cache);
-        $this->container->instance(Session::class, $this->session);
-        $this->container->instance(Request::class, $this->request);
-        $this->container->instance(Response::class, $this->response);
-        $this->container->instance(Database::class, $this->database);
-        $this->container->instance(Validator::class, $this->validator);
-    }
-
-    // --------------------------------------------------------------------------
-    // CONFIGURATION
-    // --------------------------------------------------------------------------
-
-    public static function configure(string $basePath): self
-    {
-        return new self($basePath);
     }
 
     // --------------------------------------------------------------------------
     // ROUTE CONFIG CALLBACK
     // --------------------------------------------------------------------------
 
+    /** @param class-string<RouteConfig> $routeConfig */
     public function withRouting(string $routeConfig): self
     {
         $this->routeConfig = $routeConfig;
@@ -110,6 +63,7 @@ final class Application
     // GLOBAL EXCEPTION HANDLER
     // --------------------------------------------------------------------------
 
+    /** @param Closure(mixed...): IResponse $callback */
     public function withException(Closure $callback): self
     {
         $reflection = new ReflectionFunction($callback);
@@ -139,45 +93,26 @@ final class Application
     }
 
     // --------------------------------------------------------------------------
-    // DATABASE CONFIG CALLBACK
-    // --------------------------------------------------------------------------
-
-    public function withDbConfig(
-        string $host,
-        string $port,
-        string $dbname,
-        string $charset,
-        string $username,
-        string $password,
-    ): self {
-        $this->dbConnectCallback
-            = fn() => $this->database->connect($host, $port, $dbname, $charset, $username, $password);
-        return $this;
-    }
-
-    // --------------------------------------------------------------------------
     // RUN
     // --------------------------------------------------------------------------
 
     public function run(): void
     {
-        /** @var ?Response $response  */
-        $response = null;
+        $request = $this->container->make(IRequest::class);
+        $response = $this->container->make(IResponse::class);
 
         try {
+            // Çıktıları Buffer'da Topla
             ob_start();
 
-            // Veri Tabanına Bağlan
-            if ($this->dbConnectCallback !== null) {
-                $this->container->call($this->dbConnectCallback);
+            // Route Yapılandırmasını Yap
+            if ($this->routeConfig !== null) {
+                $routeConfig = new $this->routeConfig();
+                $routeConfig->register($this->router);
             }
 
-            // Route Yapılandırmasını Yap
-            if ($this->routeConfig !== null && method_exists($this->routeConfig, "register")) {
-                $this->container->call([$this->routeConfig, "register"], ["router" => $this->router]);
-            }
             // Controller'ı Çağır
-            $response = $this->router->dispatch($this->request);
+            $response = $this->router->dispatch($request);
         } catch (Throwable $e) {
             $response = $this->handleException($e);
         }
@@ -191,11 +126,10 @@ final class Application
         $response->send();
     }
 
-    private function handleException(Throwable $e): Response
+    private function handleException(Throwable $e): IResponse
     {
         foreach ($this->exceptionCallbacks as $exceptionClass => $callback) {
             if ($e instanceof $exceptionClass) {
-                /** @var Response $response */
                 $response = $this->container->call($callback, ["exception" => $e]);
                 return $response;
             }
