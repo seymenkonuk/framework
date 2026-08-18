@@ -407,16 +407,22 @@ final class Router
     public function dispatch(IRequest $request): IResponse
     {
         $method = $request->method();
-        $uri = $request->uri();
+        $uri = $request->path();
 
+        // İstekteki metot için tanımlanmış route'ları kontrol et.
         foreach ($this->routes[$method] ?? [] as $route) {
             $params = [];
 
+            // URI route ile eşleşmiyorsa sonraki route'u kontrol et.
             if (!$this->matchUri($route, $uri, $params)) {
                 continue;
             }
 
-            $request->setRoutes($params);
+            // Route parametrelerini request'e ekle.
+            $request->with([
+                "params" => $params,
+            ]);
+
             return $this->run($route, $request, $params);
         }
 
