@@ -135,11 +135,15 @@ final class Container
         // Singleton factory'sini al.
         $factory = $this->getSingleton($class);
         if (isset($factory)) {
+            // Instance oluştur
             $instance = $this->call($factory);
-            $this->instances[$class] = $instance;
+            // Instance'ı kaydet
+            $this->instance($class, $instance);
+            // Instance'ı dön
             return $instance;
         }
 
+        // Sınıfı bağımlılıklarını çözümleyerek oluştur.
         return $this->build($class);
     }
 
