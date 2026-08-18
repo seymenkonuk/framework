@@ -9,13 +9,10 @@
 namespace Seymenkonuk\Framework\Routing;
 
 
-use InvalidArgumentException;
+use Closure;
 
-use ReflectionClass;
-use ReflectionMethod;
-use ReflectionAttribute;
+use Seymenkonuk\Framework\Container;
 
-use Seymenkonuk\Framework\Exception\AuthorizationException;
 use Seymenkonuk\Framework\Exception\RouteConflictException;
 use Seymenkonuk\Framework\Exception\RouteNotFoundException;
 use Seymenkonuk\Framework\Exception\ValidationException;
@@ -23,118 +20,74 @@ use Seymenkonuk\Framework\Exception\ValidationException;
 use Seymenkonuk\Framework\Attribute\Name;
 use Seymenkonuk\Framework\Attribute\Schema;
 use Seymenkonuk\Framework\Attribute\Prefix;
-use Seymenkonuk\Framework\Attribute\Middleware;
 use Seymenkonuk\Framework\Attribute\Route\Route as RouteAttribute;
 use Seymenkonuk\Framework\Attribute\Where\Where;
-
-use Seymenkonuk\Validator\Validator\ValidationResult;
+use Seymenkonuk\Framework\Http\Controller;
+use Seymenkonuk\Framework\Http\Middleware;
+use Seymenkonuk\Framework\Http\Request\IRequest;
+use Seymenkonuk\Framework\Http\Response\IResponse;
 
 
 final class Router
 {
     /**
-     * @var array{
-     *      GET?: array<string, Route>,
-     *      QUERY?: array<string, Route>,
-     *      POST?: array<string, Route>,
-     *      PUT?: array<string, Route>,
-     *      PATCH?: array<string, Route>,
-     *      DELETE?: array<string, Route>
-     * }
+     * Route'ları HTTP methodu ve URI'ye göre saklar.
+     *
+     * @var array<string, array<string, Route>>
      */
     private array $routes = [];
 
-    /** 
+    /**
+     * Aktif route gruplarının yapılandırmalarını saklar.
+     *
      * @var array<array{
      *      prefix?: string,
-     *      middleware?: array<string>
-     * }>  
+     *      middleware?: array<class-string<Middleware>>
+     * }>
      */
     private array $groupStack = [];
 
-    /** @var array<string> */
+    /**
+     * Tüm route'larda geçerli global middleware sınıflarını saklar.
+     *
+     * @var array<class-string<Middleware>>
+     */
     private array $middlewares = [];
 
     // ------------------------------------------------------------------
     // DEPENDENCIES
     // ------------------------------------------------------------------
 
+    /**
+     * Yeni bir router oluşturur.
+     *
+     * @param Container $container bağımlılıkları çözümlemek için kullanılan container.
+     *
+     * @return void
+     */
     public function __construct(
         private Container $container
     ) {}
 
     // ------------------------------------------------------------------
-    // ROUTES
-    // ------------------------------------------------------------------
-
-    /** @param array{0: string, 1: string} $handler */
-    public function get(string $uri, array $handler): Route
-    {
-        return $this->addRoute("GET", $uri, $handler);
-    }
-
-    /** @param array{0: string, 1: string} $handler */
-    public function query(string $uri, array $handler): Route
-    {
-        return $this->addRoute("QUERY", $uri, $handler);
-    }
-
-    /** @param array{0: string, 1: string} $handler */
-    public function post(string $uri, array $handler): Route
-    {
-        return $this->addRoute("POST", $uri, $handler);
-    }
-
-    /** @param array{0: string, 1: string} $handler */
-    public function put(string $uri, array $handler): Route
-    {
-        return $this->addRoute("PUT", $uri, $handler);
-    }
-
-    /** @param array{0: string, 1: string} $handler */
-    public function patch(string $uri, array $handler): Route
-    {
-        return $this->addRoute("PATCH", $uri, $handler);
-    }
-
-    /** @param array{0: string, 1: string} $handler */
-    public function delete(string $uri, array $handler): Route
-    {
-        return $this->addRoute("DELETE", $uri, $handler);
-    }
-
-    /** @param array{0: string, 1: string} $handler */
-    public function any(string $uri, array $handler): Route
-    {
-        return $this->match(["GET", "QUERY", "POST", "PUT", "PATCH", "DELETE"], $uri, $handler);
-    }
-
-    /**
-     * @param array<string> $methods
-     * @param array{0: string, 1: string} $handler
-     */
-    public function match(array $methods, string $uri, array $handler): Route
-    {
-        if (count($methods) == 0) {
-            throw new InvalidArgumentException(
-                "At least one HTTP method is required."
-            );
-        }
-
-        return $this->addRoute(array_map(fn($method) => strtoupper($method), $methods), $uri, $handler);
-    }
-
-    // ------------------------------------------------------------------
     // GROUP
     // ------------------------------------------------------------------
 
-    /** 
+    /**
+     * Route'ları ortak yapılandırma altında gruplar.
+     *
+     * Grup içerisinde tanımlanan route'lara belirtilen URI prefix'i ve
+     * middleware'ler uygulanır.
+     *
      * @param array{
      *      prefix?: string,
-     *      middleware?: array<string>
-     * } $attributes 
+     *      middleware?: array<class-string<Middleware>>
+     * } $attributes route grubunun yapılandırması.
+     * @param Closure(Router): void $callback grup içerisinde route'ları tanımlayacak işlev.
+     *
+     * @return void
      */
-    public function group(array $attributes, callable $callback): void
+    public function group(array $attributes, Closure $callback): void
     {
         $this->groupStack[] = $attributes;
         $callback($this);
@@ -145,78 +98,142 @@ final class Router
     // MIDDLEWARE
     // ------------------------------------------------------------------
 
-    /** @param array<string>|string $middleware */
+    /**
+     * Tüm route'larda kullanılacak global middleware'leri tanımlar.
+     *
+     * Daha önce tanımlanmış middleware'lerin üzerine yazmaz, yeni middleware'leri
+     * mevcut listenin sonuna ekler.
+     *
+     * @param array<class-string<Middleware>>|class-string<Middleware> $middleware eklenecek middleware sınıfı veya sınıfları.
+     *
+     * @return void
+     */
     public function middleware(array|string $middleware): void
     {
         $this->middlewares = array_merge($this->middlewares, (array)$middleware);
     }
 
     // ------------------------------------------------------------------
-    // CORE ADD ROUTE
+    // ROUTES
     // ------------------------------------------------------------------
 
     /**
-     * @param array<string>|string $methods
-     * @param array{0: string, 1: string} $handler
+     * HTTP GET route'u tanımlar.
+     *
+     * @param string $uri route'un eşleşeceği URI.
+     * @param array{class-string<Controller>, string}|Closure(mixed...): IResponse $handler route çalıştırıldığında çağrılacak handler.
+     *
+     * @return Route oluşturulan route.
      */
-    private function addRoute(array|string $methods, string $uri, array $handler): Route
+    public function get(string $uri, array|Closure $handler): Route
     {
-        // Route Oluştur
-        $route = new Route(
-            methods: (array)$methods,
-            uri: $this->buildUri($uri),
-            handler: $handler,
-            middleware: $this->buildMiddleware(),
-        );
-        // Route'lara Ekle
-        foreach ((array)$methods as $method) {
-            // Zaten Varsa Hata Ver
-            if (array_key_exists($method, $this->routes) && array_key_exists($uri, $this->routes[$method])) {
-                throw new RouteConflictException($method, $uri);
-            }
-            // Ekle
-            $this->routes[$method][$uri] = $route;
-        }
+        return $this->addRoute("GET", $uri, $handler);
+    }
 
-        return $route;
+    /**
+     * HTTP QUERY route'u tanımlar.
+     *
+     * @param string $uri route'un eşleşeceği URI.
+     * @param array{class-string<Controller>, string}|Closure(mixed...): IResponse $handler route çalıştırıldığında çağrılacak handler.
+     *
+     * @return Route oluşturulan route.
+     */
+    public function query(string $uri, array|Closure $handler): Route
+    {
+        return $this->addRoute("QUERY", $uri, $handler);
+    }
+
+    /**
+     * HTTP POST route'u tanımlar.
+     *
+     * @param string $uri route'un eşleşeceği URI.
+     * @param array{class-string<Controller>, string}|Closure(mixed...): IResponse $handler route çalıştırıldığında çağrılacak handler.
+     *
+     * @return Route oluşturulan route.
+     */
+    public function post(string $uri, array|Closure $handler): Route
+    {
+        return $this->addRoute("POST", $uri, $handler);
+    }
+
+    /**
+     * HTTP PUT route'u tanımlar.
+     *
+     * @param string $uri route'un eşleşeceği URI.
+     * @param array{class-string<Controller>, string}|Closure(mixed...): IResponse $handler route çalıştırıldığında çağrılacak handler.
+     *
+     * @return Route oluşturulan route.
+     */
+    public function put(string $uri, array|Closure $handler): Route
+    {
+        return $this->addRoute("PUT", $uri, $handler);
+    }
+
+    /**
+     * HTTP PATCH route'u tanımlar.
+     *
+     * @param string $uri route'un eşleşeceği URI.
+     * @param array{class-string<Controller>, string}|Closure(mixed...): IResponse $handler route çalıştırıldığında çağrılacak handler.
+     *
+     * @return Route oluşturulan route.
+     */
+    public function patch(string $uri, array|Closure $handler): Route
+    {
+        return $this->addRoute("PATCH", $uri, $handler);
+    }
+
+    /**
+     * HTTP DELETE route'u tanımlar.
+     *
+     * @param string $uri route'un eşleşeceği URI.
+     * @param array{class-string<Controller>, string}|Closure(mixed...): IResponse $handler route çalıştırıldığında çağrılacak handler.
+     *
+     * @return Route oluşturulan route.
+     */
+    public function delete(string $uri, array|Closure $handler): Route
+    {
+        return $this->addRoute("DELETE", $uri, $handler);
+    }
+
+    /**
+     * Desteklenen tüm HTTP metotları için bir route tanımlar.
+     *
+     * @param string $uri route'un eşleşeceği URI.
+     * @param array{class-string<Controller>, string}|Closure(mixed...): IResponse $handler route çalıştırıldığında çağrılacak handler.
+     *
+     * @return Route oluşturulan route.
+     */
+    public function any(string $uri, array|Closure $handler): Route
+    {
+        return $this->match(["GET", "QUERY", "POST", "PUT", "PATCH", "DELETE"], $uri, $handler);
+    }
+
+    /**
+     * Belirtilen HTTP metotları için route tanımlar.
+     *
+     * @param array<string> $methods route tarafından kabul edilecek HTTP metotları.
+     * @param string $uri route'un eşleşeceği URI.
+     * @param array{class-string<Controller>, string}|Closure(mixed...): IResponse $handler route çalıştırıldığında çağrılacak handler.
+     *
+     * @return Route oluşturulan route.
+     */
+    public function match(array $methods, string $uri, array|Closure $handler): Route
+    {
+        return $this->addRoute($methods, $uri, $handler);
     }
 
     // ------------------------------------------------------------------
-    // HELPERS
+    // ATTRIBUTE ROUTING
     // ------------------------------------------------------------------
 
-    private function buildUri(string $uri): string
-    {
-        $prefix = "";
-
-        foreach ($this->groupStack as $group) {
-            $prefix .= "/";
-            $prefix .= trim($group["prefix"] ?? "", "/");
-            $prefix = rtrim($prefix, "/");
-        }
-
-        return "/" . trim($prefix . "/" . trim($uri, "/"), "/");
-    }
-
-    /** @return array<string> */
-    private function buildMiddleware(): array
-    {
-        $middleware = array_merge([], $this->middlewares);
-
-        foreach ($this->groupStack as $group) {
-            $middleware = array_merge(
-                $middleware,
-                $group["middleware"] ?? []
-            );
-        }
-
-        return $middleware;
-    }
-
-    // ------------------------------------------------------------------
-    // REGISTER CONTROLLER (WITH ATTRIBUTES)
-    // ------------------------------------------------------------------
-
+    /**
+     * Controller sınıfındaki attribute'ları işler ve oluşturulan route'ları
+     * router'a kaydeder.
+     *
+     * @param class-string<Controller> $controller route attribute'ları okunacak controller sınıfı.
+     *
+     * @return void
+     */
     public function registerController(string $controller): void
     {
         // @phpstan-ignore-next-line
@@ -283,35 +300,106 @@ final class Router
     }
 
     // ------------------------------------------------------------------
-    // REGISTER CONTROLLER INTERNAL HELPERS
+    // REGISTRATION
     // ------------------------------------------------------------------
 
-    /** @param ReflectionClass<object>|ReflectionMethod $reflection */
-    private function getAttribute(ReflectionClass|ReflectionMethod $reflection, string $attributeName, int $flags = 0): ?object
+    /**
+     * Belirtilen HTTP metotları için route tanımlar.
+     *
+     * Aktif route gruplarının prefix ve middleware yapılandırmalarını route'a
+     * uygular ve oluşturulan route'u kayıtlı route'lar arasına ekler.
+     *
+     * Aynı HTTP metodu ve URI için daha önce route tanımlanmışsa
+     * RouteConflictException fırlatılır.
+     *
+     * @param array<string>|string $methods route tarafından kabul edilecek HTTP metodu veya metotları.
+     * @param string $uri route'un eşleşeceği URI.
+     * @param array{class-string<Controller>, string}|Closure(mixed...): IResponse $handler route çalıştırıldığında çağrılacak handler.
+     *
+     * @throws RouteConflictException aynı HTTP metodu ve URI için daha önce route tanımlanmışsa.
+     * 
+     * @return Route oluşturulan route.
+     */
+    private function addRoute(array|string $methods, string $uri, array|Closure $handler): Route
     {
-        $attributes = $reflection->getAttributes($attributeName, $flags);
-        return isset($attributes[0])
-            ? $attributes[0]->newInstance()
-            : null;
+        // Route Oluştur
+        $route = new Route(
+            methods: (array)$methods,
+            uri: $this->buildUri($uri),
+            handler: $handler,
+            middleware: $this->buildMiddleware(),
+        );
+        // Route'lara Ekle
+        foreach ((array)$methods as $method) {
+            // Zaten Varsa Hata Ver
+            if (array_key_exists($method, $this->routes) && array_key_exists($uri, $this->routes[$method])) {
+                throw new RouteConflictException($method, $uri);
+            }
+            // Ekle
+            $this->routes[$method][$uri] = $route;
+        }
+
+        return $route;
     }
 
     /**
-     * @param ReflectionClass<object>|ReflectionMethod $reflection 
-     * @return array<object> 
+     * Route URI'sini aktif grupların prefix'leri ile oluşturur.
+     *
+     * @param string $uri route'un URI'si.
+     *
+     * @return string oluşturulan URI.
      */
-    private function getAttributes(ReflectionClass|ReflectionMethod $reflection, string $attributeName, int $flags = 0): array
+    private function buildUri(string $uri): string
     {
-        return array_map(
-            fn($attribute) => $attribute->newInstance(),
-            $reflection->getAttributes($attributeName, $flags)
-        );
+        $prefix = "";
+
+        foreach ($this->groupStack as $group) {
+            $prefix .= "/";
+            $prefix .= trim($group["prefix"] ?? "", "/");
+            $prefix = rtrim($prefix, "/");
+        }
+
+        return "/" . trim($prefix . "/" . trim($uri, "/"), "/");
+    }
+
+    /**
+     * Global middleware'lerin ve aktif grupların middleware'lerinin birleşimini döndürür.
+     *
+     * @return array<class-string<Middleware>> middleware listesi.
+     */
+    private function buildMiddleware(): array
+    {
+        $middleware = array_merge([], $this->middlewares);
+
+        foreach ($this->groupStack as $group) {
+            $middleware = array_merge(
+                $middleware,
+                $group["middleware"] ?? []
+            );
+        }
+
+        return $middleware;
     }
 
     // ------------------------------------------------------------------
     // DISPATCH
     // ------------------------------------------------------------------
 
-    public function dispatch(Request $request): Response
+    /**
+     * İsteği eşleşen route'a yönlendirir.
+     *
+     * İstek için uygun bir route bulunursa route'un handler'ını çalıştırır ve
+     * oluşturulan response'u döndürür.
+     * 
+     * İstek için uygun bir route bulunamazsa RouteNotFoundException fırlatılır.
+     *
+     * @param IRequest $request işlenecek HTTP isteği.
+     *
+     * @throws RouteNotFoundException istek için eşleşen bir route bulunamazsa.
+     * 
+     * @return IResponse route handler'ından oluşturulan response.
+     */
+    public function dispatch(IRequest $request): IResponse
     {
         $method = $request->method();
         $uri = $request->uri();
@@ -330,11 +418,17 @@ final class Router
         throw new RouteNotFoundException($method, $uri);
     }
 
-    // ------------------------------------------------------------------
-    // MATCH
-    // ------------------------------------------------------------------
-
-    /** @param array<string, mixed> $params */
+    /**
+     * Route'un URI ile eşleşip eşleşmediğini kontrol eder.
+     *
+     * URI parametrelerini eşleşme sonucunda verilen parametre dizisine aktarır.
+     *
+     * @param Route $route kontrol edilecek route.
+     * @param string $uri eşleştirilecek URI.
+     * @param array<string, mixed> $params route parametrelerinin yazılacağı dizi.
+     *
+     * @return bool route URI ile eşleşiyorsa true, aksi halde false.
+     */
     private function matchUri(Route $route, string $uri, array &$params): bool
     {
         // Route Uri'yi Regex Desenine Dönüştür
@@ -364,12 +458,16 @@ final class Router
         return true;
     }
 
-    // ------------------------------------------------------------------
-    // EXECUTION (placeholder)
-    // ------------------------------------------------------------------
-
-    /** @param array<string, mixed> $params */
-    private function run(Route $route, Request $request, array $params): Response
+    /**
+     * Route'un middleware zincirini oluşturur ve zincirin ilk halkasını çalıştırır.
+     *
+     * @param Route $route çalıştırılacak route.
+     * @param IRequest $request işlenecek HTTP isteği.
+     * @param array<string, mixed> $params route parametreleri.
+     *
+     * @return IResponse middleware zinciri ve route handler'ı tarafından oluşturulan response.
+     */
+    private function run(Route $route, IRequest $request, array $params): IResponse
     {
         $currentFunction = fn(Request $request) => $this->container->call($route->handler, array_merge($params, ["request" => $request]));
 
