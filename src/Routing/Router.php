@@ -355,15 +355,15 @@ final class Router
      */
     private function buildUri(string $uri): string
     {
-        $prefix = "";
+        // Grup prefix'lerini normalize et ve boş değerleri kaldır.
+        $parts = array_filter(array_map(
+            fn(array $group): string => trim($group["prefix"] ?? "", "/"),
+            $this->groupStack,
+        ));
+        // Route URI'sini son parçaya ekle.
+        $parts[] = trim($uri, "/");
 
-        foreach ($this->groupStack as $group) {
-            $prefix .= "/";
-            $prefix .= trim($group["prefix"] ?? "", "/");
-            $prefix = rtrim($prefix, "/");
-        }
-
-        return "/" . trim($prefix . "/" . trim($uri, "/"), "/");
+        return "/" . implode("/", $parts);
     }
 
     /**
