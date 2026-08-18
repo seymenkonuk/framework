@@ -480,29 +480,62 @@ final class Router
      */
     private function run(Route $route, IRequest $request, array $params): IResponse
     {
-        $currentFunction = fn(Request $request) => $this->container->call($route->handler, array_merge($params, ["request" => $request]));
-
-        // Middleware'leri Ekle
-        for ($i = count($route->middleware) - 1; $i >= 0; $i--) {
-            $currentFunction = fn(Request $request)
-            => $this->container->call([$route->middleware[$i], "handle"], ["next" => $currentFunction, "request" => $request]);
-        }
-
         if ($route->schema !== null) {
-            // Validation Kontrolü
-            if (method_exists($route->schema, "validate")) {
-                /** @var ValidationResult $result */
-                $result = $this->container->call([$route->schema, "validate"], [
-                    "data" => $request->all(),
-                ]);
-                // Validation Error
-                if ($result->failed()) {
-                    throw new ValidationException($result->errors());
-                }
+            $schema = $this->container->make($route->schema);
+            $result = $schema->validate($request->all());
+
+            if ($result->failed()) {
+                throw new ValidationException($result->errors());
             }
+
+            /** @var array<string, mixed> */
+            $validated = $result->validated();
+
+            // Doğrulanmış verileri request'e ekle.
+            $request->with($validated);
         }
 
-        // @phpstan-ignore-next-line
-        return $currentFunction($request);
+        // Route handler'ını Closure'a dönüştür.
+        $handler = $this->buildHandler($route->handler);
+
+        // Route handler'ını middleware zincirinin sonuna yerleştir.
+        $currentFunction = fn(IRequest $request, IResponse $response): IResponse
+        => $this->container->call($handler, array_merge($params, [
+            "request" => $request,
+            "response" => $response,
+        ]));
+
+        // Middleware'leri ters sırayla zincire ekle.
+        for ($i = count($route->middleware) - 1; $i >= 0; $i--) {
+            $middleware = $this->container->make($route->middleware[$i]);
+            $currentFunction = fn(IRequest $request, IResponse $response): IResponse
+            => $middleware->handle($request, $response, $currentFunction);
+        }
+
+        // Middleware zincirini çalıştır.
+        $response = $this->container->make(IResponse::class);
+        return $currentFunction($request, $response);
+    }
+
+    /**
+     * Handler'ı Closure'a dönüştürür.
+     *
+     * Controller handler'ları container üzerinden çözümlenir ve Closure'a dönüştürülür.
+     * Closure handler'ları doğrudan döndürülür.
+     *
+     * @param array{class-string<Controller>, string}|Closure(mixed...): IResponse $handler dönüştürülecek handler.
+     *
+     * @return Closure(mixed...): IResponse oluşturulan handler.
+     */
+    private function buildHandler(array|Closure $handler): Closure
+    {
+        if ($handler instanceof Closure) {
+            return $handler;
+        }
+
+        /** @var callable(mixed...): IResponse */
+        $callable = [$this->container->make($handler[0]), $handler[1]];
+
+        return Closure::fromCallable($callable);
     }
 }
