@@ -373,16 +373,17 @@ final class Router
      */
     private function buildMiddleware(): array
     {
-        $middleware = array_merge([], $this->middlewares);
-
+        // Grup Middleware'lerini Birleştir
+        $groupMiddlewares = [];
         foreach ($this->groupStack as $group) {
-            $middleware = array_merge(
-                $middleware,
+            $groupMiddlewares = array_merge(
+                $groupMiddlewares,
                 $group["middleware"] ?? []
             );
         }
 
-        return $middleware;
+        // Global Middleware'ler ile Grup Middleware'lerini Birleştir
+        return array_merge($this->middlewares, $groupMiddlewares);
     }
 
     // ------------------------------------------------------------------
