@@ -331,14 +331,18 @@ final class Router
         );
         // Route'lara Ekle
         foreach ((array)$methods as $method) {
-            // Zaten Varsa Hata Ver
-            if (array_key_exists($method, $this->routes) && array_key_exists($uri, $this->routes[$method])) {
+            // Metot Dizisi Yoksa Oluştur
+            if (!array_key_exists($method, $this->routes)) {
+                $this->routes[$method] = [];
+            }
+            // URI için Önceden Route Tanımlandıysa Hata Ver
+            if (array_key_exists($uri, $this->routes[$method])) {
                 throw new RouteConflictException($method, $uri);
             }
-            // Ekle
+            // Route'u Ekle
             $this->routes[$method][$uri] = $route;
         }
-
+        // Route'u Döndür
         return $route;
     }
 
