@@ -10,6 +10,7 @@ namespace Seymenkonuk\Framework\Http\Request;
 
 
 use Seymenkonuk\Framework\Http\UploadedFile\IUploadedFile;
+use Seymenkonuk\Framework\Http\UploadedFile\PhpUploadedFile;
 
 
 final class Request implements IRequest
@@ -64,6 +65,98 @@ final class Request implements IRequest
         protected array $params,
         protected array $server,
     ) {}
+
+    // --------------------------------------------------------------------------
+    // FACTORIES
+    // --------------------------------------------------------------------------
+
+    /**
+     * Mevcut PHP request verilerinden yeni bir request oluşturur.
+     *
+     * @return static oluşturulan request.
+     */
+    public static function capture(): static
+    {
+        $version = $_SERVER["SERVER_PROTOCOL"];
+        $version = is_string($version) ? $version : "HTTP/1.1";
+
+        $method = $_SERVER["REQUEST_METHOD"];
+        $method = is_string($method) ? strtoupper($method) : "GET";
+
+        $uri = $_SERVER["REQUEST_URI"];
+        $uri = is_string($uri) ? $uri : "/";
+        $path = parse_url("https://recepseymenkonuk.com" . $uri, PHP_URL_PATH) ?: "/";
+
+        /** @var array<string, string> */
+        $headers = self::parseHeader();
+
+        /** @var array<string, mixed> */
+        $cookies = $_COOKIE;
+
+        /** @var array<string, mixed> */
+        $post = $_POST;
+
+        /** @var array<string, mixed> */
+        $queries = $_GET;
+
+        /** @var array<string, PhpUploadedFile> */
+        $files = array_map(function ($file) {
+            return new PhpUploadedFile($file); // @phpstan-ignore argument.type
+        }, $_FILES);
+
+        /** @var array<string, mixed> */
+        $server = $_SERVER;
+
+        return new static(
+            version: $version,
+            method: $method,
+            path: $path,
+            headers: $headers,
+            cookies: $cookies,
+            body: file_get_contents("php://input") ?: "",
+            post: $post,
+            queries: $queries,
+            files: $files,
+            params: [],
+            server: $server,
+        );
+    }
+
+    /**
+     * Sunucu değişkenlerinden HTTP header'larını ayrıştırır.
+     *
+     * `HTTP_` ile başlayan sunucu değişkenleri header olarak kabul edilir.
+     * Header adlarındaki alt çizgiler tireye çevrilir ve her kelimenin ilk
+     * harfi büyük olacak şekilde normalize edilir.
+     *
+     * @return array<string, string> ayrıştırılmış HTTP header'ları.
+     */
+    private static function parseHeader(): array
+    {
+        $headers = [];
+
+        foreach ($_SERVER as $key => $value) {
+            if (!str_starts_with($key, "HTTP_")) {
+                continue;
+            }
+
+            $name = substr($key, 5);
+            $name = str_replace("_", "-", strtolower($name));
+            $name = ucwords($name, "-");
+
+            $headers[$name] = (string) $value; // @phpstan-ignore cast.string
+        }
+
+        if (isset($_SERVER["CONTENT_TYPE"])) {
+            $headers["Content-Type"] = (string) $_SERVER["CONTENT_TYPE"]; // @phpstan-ignore cast.string
+        }
+
+        if (isset($_SERVER["CONTENT_LENGTH"])) {
+            $headers["Content-Length"] = (string) $_SERVER["CONTENT_LENGTH"]; // @phpstan-ignore cast.string
+        }
+
+        return $headers;
+    }
 
     // --------------------------------------------------------------------------
     //  HTTP INFO
