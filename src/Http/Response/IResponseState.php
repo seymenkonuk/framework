@@ -9,7 +9,7 @@
 namespace Seymenkonuk\Framework\Http\Response;
 
 
-use Seymenkonuk\Framework\Http\Cookie\ICookie;
+use Seymenkonuk\Framework\Http\Cookie\Cookie;
 
 
 interface IResponseState
@@ -67,14 +67,14 @@ interface IResponseState
      *
      * @param string $key okunacak cookie'nin adı.
      *
-     * @return ?ICookie cookie veya null.
+     * @return ?Cookie cookie veya null.
      */
-    public function cookie(string $key): ?ICookie;
+    public function cookie(string $key): ?Cookie;
 
     /**
      * Response'a ait tüm cookie'leri döndürür.
      *
-     * @return array<string, ICookie> cookie adları ve cookie'ler.
+     * @return array<string, Cookie> cookie adları ve cookie'ler.
      */
     public function allCookie(): array;
 

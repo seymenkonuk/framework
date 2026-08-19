@@ -9,7 +9,7 @@
 namespace Seymenkonuk\Framework\Http\Response;
 
 
-use Seymenkonuk\Framework\Http\Cookie\ICookie;
+use Seymenkonuk\Framework\Http\Cookie\Cookie;
 
 
 interface IResponse
@@ -178,11 +178,11 @@ interface IResponse
     /**
      * Belirtilen cookie'yi response'a ekler.
      *
-     * @param ICookie $cookie eklenecek cookie.
+     * @param Cookie $cookie eklenecek cookie.
      *
      * @return self
      */
-    public function cookie(ICookie $cookie): self;
+    public function cookie(Cookie $cookie): self;
 
     /**
      * Belirtilen cookie'nin response üzerinden kaldırılmasını sağlar.
