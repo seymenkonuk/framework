@@ -411,10 +411,11 @@ final class Router
 
         // İstekteki metot için tanımlanmış route'ları kontrol et.
         foreach ($this->routes[$method] ?? [] as $route) {
+            $routeState = $route->state();
             $params = [];
 
             // URI route ile eşleşmiyorsa sonraki route'u kontrol et.
-            if (!$this->matchUri($route, $uri, $params)) {
+            if (!$this->matchUri($routeState, $uri, $params)) {
                 continue;
             }
 
@@ -423,7 +424,7 @@ final class Router
                 "params" => $params,
             ]);
 
-            return $this->run($route, $request, $params);
+            return $this->run($routeState, $request, $params);
         }
 
         throw new RouteNotFoundException($method, $uri);
@@ -434,24 +435,20 @@ final class Router
      *
      * URI parametrelerini eşleşme sonucunda verilen parametre dizisine aktarır.
      *
-     * @param Route $route kontrol edilecek route.
+     * @param RouteState $route kontrol edilecek route.
      * @param string $uri eşleştirilecek URI.
      * @param array<string, mixed> $params route parametrelerinin yazılacağı dizi.
      *
      * @return bool route URI ile eşleşiyorsa true, aksi halde false.
      */
-    private function matchUri(Route $route, string $uri, array &$params): bool
+    private function matchUri(RouteState $route, string $uri, array &$params): bool
     {
         // Route Uri'yi Regex Desenine Dönüştür
-        $pattern = preg_replace_callback(
-            "/\{(\w+?)\}/",
-            function ($m) use ($route) {
-                $key = $m[1];
-                $regex = $route->where[$key] ?? "\w+";
-                return "(?P<" . $key . ">" . $regex . ")";
-            },
-            $route->uri
-        );
+        $pattern = preg_replace_callback("/\{(\w+?)\}/", function ($m) use ($route) {
+            $key = $m[1];
+            $regex = $route->where($key) ?? "\w+";
+            return "(?P<" . $key . ">" . $regex . ")";
+        }, $route->uri());
         $pattern = "#^" . $pattern . "$#";
 
         // Request Uri Desene Uymuyorsa False Döndür
@@ -472,16 +469,16 @@ final class Router
     /**
      * Route'un middleware zincirini oluşturur ve zincirin ilk halkasını çalıştırır.
      *
-     * @param Route $route çalıştırılacak route.
+     * @param RouteState $route çalıştırılacak route.
      * @param IRequest $request işlenecek HTTP isteği.
      * @param array<string, mixed> $params route parametreleri.
      *
      * @return IResponse middleware zinciri ve route handler'ı tarafından oluşturulan response.
      */
-    private function run(Route $route, IRequest $request, array $params): IResponse
+    private function run(RouteState $route, IRequest $request, array $params): IResponse
     {
-        if ($route->schema !== null) {
-            $schema = $this->container->make($route->schema);
+        if ($route->schema() !== null) {
+            $schema = $this->container->make($route->schema());
             $result = $schema->validate($request->all());
 
             if ($result->failed()) {
@@ -496,7 +493,7 @@ final class Router
         }
 
         // Route handler'ını Closure'a dönüştür.
-        $handler = $this->buildHandler($route->handler);
+        $handler = $this->buildHandler($route->handler());
 
         // Route handler'ını middleware zincirinin sonuna yerleştir.
         $currentFunction = fn(IRequest $request, IResponse $response): IResponse
@@ -506,8 +503,9 @@ final class Router
         ]));
 
         // Middleware'leri ters sırayla zincire ekle.
-        for ($i = count($route->middleware) - 1; $i >= 0; $i--) {
-            $middleware = $this->container->make($route->middleware[$i]);
+        $middlewares = $route->allMiddleware();
+        for ($i = count($middlewares) - 1; $i >= 0; $i--) {
+            $middleware = $this->container->make($middlewares[$i]);
             $currentFunction = fn(IRequest $request, IResponse $response): IResponse
             => $middleware->handle($request, $response, $currentFunction);
         }
