@@ -9,14 +9,25 @@
 namespace Seymenkonuk\Framework\Exception;
 
 
-use Exception;
+use RuntimeException;
 use Throwable;
 
 
-class DatabaseException extends Exception
+/**
+ * Veritabanı işlemleri sırasında oluşan hataları temsil eder.
+ */
+class DatabaseException extends RuntimeException
 {
+    /**
+     * Yeni bir database exception oluşturur.
+     *
+     * @param string $message hata mesajı.
+     * @param ?Throwable $previous önceki exception veya null.
+     *
+     * @return void
+     */
     public function __construct(
-        string $message = "Database Exception",
+        string $message = "A database error occurred.",
         ?Throwable $previous = null,
     ) {
         parent::__construct($message, previous: $previous);

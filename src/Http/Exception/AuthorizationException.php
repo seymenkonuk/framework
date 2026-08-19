@@ -9,31 +9,49 @@
 namespace Seymenkonuk\Framework\Http\Exception;
 
 
-use Exception;
+use RuntimeException;
 use Throwable;
 
 
-class AuthorizationException extends Exception
+/**
+ * İstenen kaynağa erişim yetkisi bulunmadığında oluşan hatayı temsil eder.
+ */
+class AuthorizationException extends RuntimeException
 {
+    /**
+     * Yeni bir authorization exception oluşturur.
+     *
+     * @param string $title hata başlığı.
+     * @param string $description hatanın açıklaması.
+     * @param ?Throwable $previous önceki exception veya null.
+     *
+     * @return void
+     */
     public function __construct(
-        protected string $title,
-        protected string $description,
+        protected readonly string $title = "Unauthorized",
+        protected readonly string $description = "You are not authorized to access this resource.",
         ?Throwable $previous = null,
     ) {
-        parent::__construct("Yetkilendirme Hatası", previous: $previous);
+        parent::__construct($description, previous: $previous);
     }
 
-    /**  
-     * @return array{
-     *      title: string,
-     *      description: string
-     * }
+    /**
+     * Hatanın başlığını döndürür.
+     *
+     * @return string hata başlığı.
      */
-    public function errors(): array
+    public function title(): string
     {
-        return [
-            "title" => $this->title,
-            "description" => $this->description,
-        ];
+        return $this->title;
+    }
+
+    /**
+     * Hatanın açıklamasını döndürür.
+     *
+     * @return string hata açıklaması.
+     */
+    public function description(): string
+    {
+        return $this->description;
     }
 }

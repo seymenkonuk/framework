@@ -9,23 +9,51 @@
 namespace Seymenkonuk\Framework\Exception;
 
 
-use Exception;
+use RuntimeException;
 use Throwable;
 
-
-class RouteNotFoundException extends Exception
+/**
+ * İstenen route bulunamadığında oluşan hatayı temsil eder.
+ */
+class RouteNotFoundException extends RuntimeException
 {
+    /**
+     * Yeni bir route not found exception oluşturur.
+     *
+     * @param string $method istenen HTTP metodu.
+     * @param string $uri istenen URI.
+     * @param ?Throwable $previous önceki exception veya null.
+     *
+     * @return void
+     */
     public function __construct(
-        string $method = '',
-        string $uri = '',
+        protected readonly string $method,
+        protected readonly string $uri,
         ?Throwable $previous = null,
     ) {
-        $message = 'Route not found';
+        parent::__construct(
+            "Route not found: [{$method}] {$uri}",
+            previous: $previous,
+        );
+    }
 
-        if ($method !== '' || $uri !== '') {
-            $message .= ": [$method] $uri";
-        }
+    /**
+     * İstenen HTTP metodunu döndürür.
+     *
+     * @return string HTTP metodu.
+     */
+    public function method(): string
+    {
+        return $this->method;
+    }
 
-        parent::__construct($message, 404, previous: $previous);
+    /**
+     * İstenen URI'yi döndürür.
+     *
+     * @return string URI.
+     */
+    public function uri(): string
+    {
+        return $this->uri;
     }
 }
