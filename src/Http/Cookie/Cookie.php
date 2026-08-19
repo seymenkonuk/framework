@@ -39,6 +39,35 @@ final class Cookie
     ) {}
 
     // --------------------------------------------------------------------------
+    // FACTORIES
+    // --------------------------------------------------------------------------
+
+    /**
+     * Belirtilen cookie'yi silmek için yeni bir cookie oluşturur.
+     *
+     * Cookie'nin sona erme zamanını geçmiş bir Unix timestamp olarak ayarlar.
+     *
+     * @param string $name silinecek cookie'nin adı.
+     * @param string $path cookie'nin geçerli olduğu path.
+     * @param string $domain cookie'nin geçerli olduğu domain.
+     *
+     * @return static silinmek üzere oluşturulan cookie.
+     */
+    public static function forget(
+        string $name,
+        string $path = "/",
+        string $domain = "",
+    ): static {
+        return new Cookie(
+            $name,
+            "",
+            time() - 3600,
+            $path,
+            $domain,
+        );
+    }
+    
+    // --------------------------------------------------------------------------
     // IDENTITY
     // --------------------------------------------------------------------------
 
