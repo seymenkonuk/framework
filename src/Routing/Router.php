@@ -477,11 +477,9 @@ final class Router
                 throw new ValidationException($result->errors());
             }
 
-            /** @var array<string, mixed> */
-            $validated = $result->validated();
-
             // Doğrulanmış verileri request'e ekle.
-            $request->with($validated);
+            $validated = $result->validated();
+            $request->with($validated); // @phpstan-ignore argument.type
         }
 
         // Route handler'ını Closure'a dönüştür.
