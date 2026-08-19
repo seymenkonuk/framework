@@ -22,7 +22,7 @@ class WhereAlpha extends Where
      * @param string $key route parametresinin adı.
      */
     public function __construct(
-        public string $key,
+        string $key,
     ) {
         parent::__construct($key, "[a-zA-Z]+");
     }

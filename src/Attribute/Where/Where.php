@@ -22,7 +22,7 @@ class Where
      * @param string $pattern route parametresinin eşleşeceği düzenli ifade (regex).
      */
     public function __construct(
-        public string $key,
-        public string $pattern,
+        public readonly string $key,
+        public readonly string $pattern,
     ) {}
 }

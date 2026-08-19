@@ -21,7 +21,7 @@ class Post extends Route
      * @param string $uri route'un eşleşeceği URI.
      */
     public function __construct(
-        public string $uri,
+        string $uri,
     ) {
         parent::__construct("POST", $uri);
     }

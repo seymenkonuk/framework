@@ -28,6 +28,6 @@ class Middleware
      * @param class-string<HttpMiddleware> $middleware uygulanacak middleware sınıfı.
      */
     public function __construct(
-        public string $middleware,
+        public readonly string $middleware,
     ) {}
 }

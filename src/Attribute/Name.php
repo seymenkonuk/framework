@@ -23,6 +23,6 @@ class Name
      * @param string $name route için kullanılacak isim.
      */
     public function __construct(
-        public string $name,
+        public readonly string $name,
     ) {}
 }

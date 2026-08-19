@@ -26,6 +26,6 @@ class Schema
      * @param class-string<IRequestSchema> $schema kullanılacak request schema sınıfı.
      */
     public function __construct(
-        public string $schema,
+        public readonly string $schema,
     ) {}
 }

@@ -21,7 +21,7 @@ class Any extends Route
      * @param string $uri route'un eşleşeceği URI.
      */
     public function __construct(
-        public string $uri,
+        string $uri,
     ) {
         parent::__construct(["GET", "QUERY", "POST", "PATCH", "PUT", "DELETE"], $uri);
     }

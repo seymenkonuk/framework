@@ -24,6 +24,6 @@ class Prefix
      * @param string $uri route'lara uygulanacak URI ön eki.
      */
     public function __construct(
-        public string $uri,
+        public readonly string $uri,
     ) {}
 }

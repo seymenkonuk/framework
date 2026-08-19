@@ -32,8 +32,8 @@ class Route
      * @throws InvalidArgumentException $methods boş bir array ise.
      */
     public function __construct(
-        public array|string $methods,
-        public string $uri,
+        public readonly array|string $methods,
+        public readonly string $uri,
     ) {
         if (is_array($methods) && count($methods) == 0) {
             throw new InvalidArgumentException(
