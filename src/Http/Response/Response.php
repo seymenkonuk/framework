@@ -421,7 +421,9 @@ final class Response implements IResponse
         foreach ($this->cookies as $cookie) {
             setcookie(
                 $cookie->name(),
-                serialize($cookie->value()),
+                is_scalar($cookie->value())
+                    ? (string) $cookie->value()
+                    : serialize($cookie->value()),
                 $cookie->expires(),
                 $cookie->path(),
                 $cookie->domain(),
