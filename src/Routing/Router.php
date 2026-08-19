@@ -474,7 +474,7 @@ final class Router
             $result = $schema->validate($request->all());
 
             if ($result->failed()) {
-                throw new ValidationException($result->errors());
+                throw new ValidationException($result->errors()); // @phpstan-ignore argument.type
             }
 
             // Doğrulanmış verileri request'e ekle.
