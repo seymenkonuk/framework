@@ -412,7 +412,7 @@ final class Router
             }
 
             // Route parametrelerini request'e ekle.
-            $request->with([
+            $request = $request->with([
                 "params" => $params,
             ]);
 
@@ -479,7 +479,7 @@ final class Router
 
             // Doğrulanmış verileri request'e ekle.
             $validated = $result->validated();
-            $request->with($validated); // @phpstan-ignore argument.type
+            $request = $request->with($validated); // @phpstan-ignore argument.type
         }
 
         // Route handler'ını Closure'a dönüştür.
