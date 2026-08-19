@@ -46,8 +46,9 @@ final class AttributeResolver
      * Attribute bulunamazsa null döndürülür.
      *
      * @template T of object
+     * @template R of object
      *
-     * @param ReflectionClass<object>|ReflectionFunctionAbstract $reflection
+     * @param ReflectionClass<R>|ReflectionFunctionAbstract $reflection
      *        attribute'u aranacak reflection nesnesi.
      * @param class-string<T> $attribute aranacak attribute sınıfı.
      * @param int $flags attribute aramasında kullanılacak Reflection flag'leri.
@@ -74,8 +75,9 @@ final class AttributeResolver
      * Attribute bulunamazsa boş array döndürülür.
      *
      * @template T of object
+     * @template R of object
      *
-     * @param ReflectionClass<object>|ReflectionFunctionAbstract $reflection
+     * @param ReflectionClass<R>|ReflectionFunctionAbstract $reflection
      *        attribute'ları aranacak reflection nesnesi.
      * @param class-string<T> $attribute aranacak attribute sınıfı.
      * @param int $flags attribute aramasında kullanılacak Reflection flag'leri.
