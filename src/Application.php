@@ -197,17 +197,16 @@ final class Application
     // --------------------------------------------------------------------------
 
     /**
-     * Uygulamayı çalıştırır.
+     * Verilen HTTP isteğini uygulama üzerinden çalıştırır.
      *
-     * Gelen isteği işler ve oluşan response'u gönderir.
+     * İsteği işler ve oluşan response'u gönderir.
+     * 
+     * @param IRequest $request çalıştırılacak HTTP isteği.
      *
      * @return IResponseState gönderilen response'un state'i.
      */
-    public function run(): IResponseState
+    public function run(IRequest $request): IResponseState
     {
-        $request = $this->container->make(IRequest::class);
-        $response = $this->container->make(IResponse::class);
-
         try {
             // Çıktıları Buffer'da Topla
             ob_start();
@@ -231,7 +230,7 @@ final class Application
         }
 
         // Response'u Gönder
-        return  $response->send();
+        return $response->send();
     }
 
     // --------------------------------------------------------------------------
