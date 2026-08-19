@@ -20,12 +20,15 @@ use Seymenkonuk\Framework\Exception\ValidationException;
 use Seymenkonuk\Framework\Attribute\Name;
 use Seymenkonuk\Framework\Attribute\Schema;
 use Seymenkonuk\Framework\Attribute\Prefix;
+use Seymenkonuk\Framework\Attribute\Middleware as MiddlewareAttribute;
 use Seymenkonuk\Framework\Attribute\Route\Route as RouteAttribute;
 use Seymenkonuk\Framework\Attribute\Where\Where;
 use Seymenkonuk\Framework\Http\Controller;
 use Seymenkonuk\Framework\Http\Middleware;
 use Seymenkonuk\Framework\Http\Request\IRequest;
 use Seymenkonuk\Framework\Http\Response\IResponse;
+use Seymenkonuk\Framework\Reflection\AttributeResolver;
+use Seymenkonuk\Framework\Reflection\Reflect;
 
 
 final class Router
@@ -236,25 +239,18 @@ final class Router
      */
     public function registerController(string $controller): void
     {
-        // @phpstan-ignore-next-line
-        $reflection = new ReflectionClass($controller);
+        $reflection = Reflect::class($controller);
         // Prefix'i Öğren
-        /** @var Prefix|null $prefixAttribute */
-        $prefixAttribute = $this->getAttribute($reflection, Prefix::class);
+        $prefixAttribute = AttributeResolver::one($reflection, Prefix::class);
         $prefix = $prefixAttribute !== null ? $prefixAttribute->uri : "";
         // Class Middleware'lerini Öğren
-        $controllerMiddlewares = array_map(
-            function ($object) {
-                /** @var Middleware $object */
-                return $object->middleware;
-            },
-            $this->getAttributes($reflection, Middleware::class),
-        );
+        $controllerMiddlewares = array_map(function ($object) {
+            return $object->middleware;
+        }, AttributeResolver::all($reflection, MiddlewareAttribute::class));
         // Class'ın Metotlarını Öğren
         foreach ($reflection->getMethods() as $method) {
             // Route Attribute
-            /** @var RouteAttribute|null $route */
-            $route = $this->getAttribute($method, RouteAttribute::class, ReflectionAttribute::IS_INSTANCEOF);
+            $route = AttributeResolver::one($method, RouteAttribute::class, AttributeResolver::IS_INSTANCEOF);
             // Route'u Yoksa Action Metot Değildir
             if ($route === null) {
                 continue;
@@ -263,39 +259,35 @@ final class Router
             $methods = (array)$route->methods;
             $uri = "/" . trim(trim($prefix, "/") . "/" . trim($route->uri, "/"), "/");
             // Name Attribute
-            /** @var Name|null $nameAttribute */
-            $nameAttribute = $this->getAttribute($method, Name::class);
+            $nameAttribute = AttributeResolver::one($method, Name::class);
             $name = $nameAttribute !== null ? $nameAttribute->name : null;
             // Schema Attribute
-            /** @var Schema|null $schemaAttribute */
-            $schemaAttribute = $this->getAttribute($method, Schema::class);
+            $schemaAttribute = AttributeResolver::one($method, Schema::class);
             $schema = $schemaAttribute !== null ? $schemaAttribute->schema : null;
             // Middleware Attributes
-            $middlewares = array_map(
-                function ($object) {
-                    /** @var Middleware $object */
-                    return $object->middleware;
-                },
-                $this->getAttributes($method, Middleware::class),
-            );
+            $middlewares = array_map(function ($object) {
+                return $object->middleware;
+            }, AttributeResolver::all($method, MiddlewareAttribute::class));
             // Where Attributes
-            $where = array_column(array_map(
-                function ($object) {
-                    /** @var Where $object */
-                    return [
-                        "key" => $object->key,
-                        "value" => $object->pattern,
-                    ];
-                },
-                $this->getAttributes($method, Where::class, ReflectionAttribute::IS_INSTANCEOF)
-            ), "value", "key");
+            $where = array_column(array_map(function ($object) {
+                return [
+                    "key" => $object->key,
+                    "value" => $object->pattern,
+                ];
+            }, AttributeResolver::all($method, Where::class, AttributeResolver::IS_INSTANCEOF)), "value", "key");
 
             // Route Olarak Kaydet
-            $this->match($methods, $uri, [$controller, $method->getName()])
-                ->name($name)
-                ->schema($schema)
+            $newRoute = $this->match($methods, $uri, [$controller, $method->getName()])
                 ->whereMany($where)
                 ->middleware(array_merge($controllerMiddlewares, $middlewares));
+
+            if ($schema !== null) {
+                $newRoute->schema($schema);
+            }
+
+            if ($name !== null) {
+                $newRoute->name($name);
+            }
         }
     }
 
