@@ -18,14 +18,33 @@ use ReflectionIntersectionType;
 
 use Seymenkonuk\Framework\Http\Request\IRequest;
 use Seymenkonuk\Framework\Http\Response\IResponse;
+use Seymenkonuk\Framework\Http\Response\Response;
 use Seymenkonuk\Framework\Http\Response\ResponseState;
 use Seymenkonuk\Framework\Reflection\Reflect;
 use Seymenkonuk\Framework\Routing\RouteConfig;
 use Seymenkonuk\Framework\Routing\Router;
+use Seymenkonuk\Framework\TemplateEngine\ITemplateEngine;
+use Seymenkonuk\Framework\TemplateEngine\NullTemplateEngine;
 
 
 final class Application
 {
+    // --------------------------------------------------------------------------
+    // CONSTANTS
+    // --------------------------------------------------------------------------
+
+    /**
+     * Uygulama tarafından kullanılacak varsayılan container binding'leri.
+     *
+     * Binding tanımı bulunmayan bağımlılıklar için bu eşleştirmeler kullanılır.
+     *
+     * @var array<class-string, class-string>
+     */
+    public const DEFAULT_BINDINGS = [
+        IResponse::class => Response::class,
+        ITemplateEngine::class => NullTemplateEngine::class,
+    ];
+
     // --------------------------------------------------------------------------
     // PROPERTIES
     // --------------------------------------------------------------------------
@@ -71,6 +90,8 @@ final class Application
     {
         $this->container = new Container();
         $this->router = new Router($this->container);
+
+        $this->withBindings(self::DEFAULT_BINDINGS);
     }
 
     // --------------------------------------------------------------------------
