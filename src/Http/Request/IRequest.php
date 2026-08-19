@@ -140,15 +140,16 @@ interface IRequest
      * İsteğe ait kullanıcı tarafından gönderilen tüm verileri döndürür.
      * 
      * @return array{
-     *     method: string,
      *     version: string,
+     *     method: string,
      *     path: string,
      *     headers: array<string, string>,
      *     cookies: array<string, mixed>,
      *     body: array<string, mixed>,
      *     query: array<string, mixed>,
      *     params: array<string, mixed>,
-     *     files: array<string, IUploadedFile>
+     *     files: array<string, IUploadedFile>,
+     *     server: array<string, mixed>
      * } istek verileri.
      */
     public function all(): array;
@@ -420,7 +421,18 @@ interface IRequest
      * Mevcut istek değiştirilmez.
      * Belirtilen anahtarlar mevcut verilerle aynıysa yeni değerler kullanılır.
      *
-     * @param array<string, mixed> $data yeni isteğe eklenecek veya mevcut değerlerin
+     * @param array{
+     *     version?: string,
+     *     method?: string,
+     *     path?: string,
+     *     headers?: array<string, string>,
+     *     cookies?: array<string, mixed>,
+     *     body?: array<string, mixed>,
+     *     query?: array<string, mixed>,
+     *     params?: array<string, mixed>,
+     *     files?: array<string, IUploadedFile>,
+     *     server?: array<string, mixed>
+     * } $data yeni isteğe eklenecek veya mevcut değerlerin
      * üzerine yazılacak veriler.
      *
      * @return IRequest belirtilen veriler eklenmiş yeni istek.
