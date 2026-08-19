@@ -221,7 +221,7 @@ final class Application
             $response = $this->router->dispatch($request);
         } catch (Throwable $e) {
             // Exception Handler'ı Çağır
-            $response = $this->handleException($e);
+            $response = $this->handleException($e, $request);
         }
 
         // Bufferdakileri Çöpe At
@@ -243,14 +243,18 @@ final class Application
      * Eşleşen bir handler bulunamazsa exception yeniden fırlatılır.
      *
      * @param Throwable $e işlenecek exception.
+     * @param IRequest $request exception handler'a verilecek request.
      *
      * @return IResponse exception handler tarafından oluşturulan response.
      */
-    private function handleException(Throwable $e): IResponse
+    private function handleException(Throwable $e, IRequest $request): IResponse
     {
         foreach ($this->exceptionCallbacks as $exceptionClass => $callback) {
             if ($e instanceof $exceptionClass) {
-                $response = $this->container->call($callback, ["exception" => $e]);
+                $response = $this->container->call($callback, [
+                    "exception" => $e,
+                    "request" => $request,
+                ]);
                 return $response;
             }
         }
