@@ -478,9 +478,9 @@ interface IResponse
     /**
      * Response'un mevcut durumunu döndürür.
      *
-     * @return IResponseState response durumu.
+     * @return ResponseState response durumu.
      */
-    public function state(): IResponseState;
+    public function state(): ResponseState;
 
     // --------------------------------------------------------------------------
     // OUTPUT
@@ -489,7 +489,7 @@ interface IResponse
     /**
      * Response'u istemciye gönderir.
      *
-     * @return IResponseState gönderilen response'un durumu.
+     * @return ResponseState gönderilen response'un durumu.
      */
-    public function send(): IResponseState;
+    public function send(): ResponseState;
 }

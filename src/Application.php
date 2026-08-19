@@ -18,7 +18,7 @@ use ReflectionIntersectionType;
 
 use Seymenkonuk\Framework\Http\Request\IRequest;
 use Seymenkonuk\Framework\Http\Response\IResponse;
-use Seymenkonuk\Framework\Http\Response\IResponseState;
+use Seymenkonuk\Framework\Http\Response\ResponseState;
 use Seymenkonuk\Framework\Reflection\Reflect;
 use Seymenkonuk\Framework\Routing\RouteConfig;
 use Seymenkonuk\Framework\Routing\Router;
@@ -203,9 +203,9 @@ final class Application
      * 
      * @param IRequest $request çalıştırılacak HTTP isteği.
      *
-     * @return IResponseState gönderilen response'un state'i.
+     * @return ResponseState gönderilen response'un state'i.
      */
-    public function run(IRequest $request): IResponseState
+    public function run(IRequest $request): ResponseState
     {
         try {
             // Çıktıları Buffer'da Topla
