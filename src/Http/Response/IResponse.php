@@ -185,13 +185,15 @@ interface IResponse
     public function cookie(Cookie $cookie): self;
 
     /**
-     * Belirtilen cookie'nin response üzerinden kaldırılmasını sağlar.
+     * Belirtilen cookie'nin silinmesi gerektiğini response'a ekler.
      *
-     * @param string $name kaldırılacak cookie'nin adı.
+     * @param string $name silinecek cookie'nin adı.
+     * @param string $path cookie'nin geçerli olduğu path.
+     * @param string $domain cookie'nin geçerli olduğu domain.
      *
      * @return self
      */
-    public function forgetCookie(string $name): self;
+    public function forgetCookie(string $name, string $path = "/", string $domain = ""): self;
 
     // --------------------------------------------------------------------------
     // JSON HELPERS
