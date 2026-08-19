@@ -114,7 +114,7 @@ final class PlatesTemplateEngine implements ITemplateEngine
             $html = $this->plates->render($path, $data);
             return $this->htmlMin->minify($html);
         } catch (Throwable $e) {
-            throw new TemplateException($e->getMessage(), previous: $e);
+            throw new TemplateException($e->getMessage(), $path, previous: $e);
         }
     }
 }
