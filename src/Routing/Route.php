@@ -37,13 +37,13 @@ final class Route
      * @return void
      */
     public function __construct(
-        public array $methods,
-        public string $uri,
-        public array|Closure $handler,
-        public array $middleware = [],
-        public array $where = [],
-        public ?string $schema = null,
-        public ?string $name = null,
+        protected array $methods,
+        protected string $uri,
+        protected array|Closure $handler,
+        protected array $middleware = [],
+        protected array $where = [],
+        protected ?string $schema = null,
+        protected ?string $name = null,
     ) {}
 
     // ------------------------------------------------------------------
@@ -246,5 +246,27 @@ final class Route
     {
         $this->name = $name;
         return $this;
+    }
+
+    // --------------------------------------------------------------------------
+    // STATE
+    // --------------------------------------------------------------------------
+
+    /**
+     * Route'un mevcut durumunu döndürür.
+     *
+     * @return RouteState route durumu.
+     */
+    public function state(): RouteState
+    {
+        return new RouteState(
+            $this->methods,
+            $this->uri,
+            $this->handler,
+            $this->middleware,
+            $this->where,
+            $this->schema,
+            $this->name,
+        );
     }
 }
