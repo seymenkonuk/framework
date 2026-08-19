@@ -301,14 +301,14 @@ interface IRequest
      * 
      * @return ($default is null ? mixed : T) route parametresi veya varsayılan değer.
      */
-    public function route(string $key, mixed $default = null): mixed;
+    public function param(string $key, mixed $default = null): mixed;
 
     /**
      * İsteğe ait tüm route parametrelerini döndürür.
      * 
      * @return array<string, mixed> route parametreleri.
      */
-    public function allRoute(): array;
+    public function allParam(): array;
 
     /**
      * Belirtilen route parametresinin mevcut olup olmadığını döndürür.
@@ -317,7 +317,7 @@ interface IRequest
      * 
      * @return bool route parametresi mevcutsa true, aksi halde false.
      */
-    public function hasRoute(string $key): bool;
+    public function hasParam(string $key): bool;
 
     // --------------------------------------------------------------------------
     //  FILES
