@@ -416,7 +416,7 @@ final class Router
                 "params" => $params,
             ]);
 
-            return $this->run($routeState, $request, $params);
+            return $this->run($routeState, $request);
         }
 
         throw new RouteNotFoundException($method, $uri);
@@ -463,11 +463,10 @@ final class Router
      *
      * @param RouteState $route çalıştırılacak route.
      * @param IRequest $request işlenecek HTTP isteği.
-     * @param array<string, mixed> $params route parametreleri.
      *
      * @return IResponse middleware zinciri ve route handler'ı tarafından oluşturulan response.
      */
-    private function run(RouteState $route, IRequest $request, array $params): IResponse
+    private function run(RouteState $route, IRequest $request): IResponse
     {
         if ($route->schema() !== null) {
             $schema = $this->container->make($route->schema());
@@ -487,7 +486,7 @@ final class Router
 
         // Route handler'ını middleware zincirinin sonuna yerleştir.
         $currentFunction = fn(IRequest $request, IResponse $response): IResponse
-        => $this->container->call($handler, array_merge($params, [
+        => $this->container->call($handler, array_merge($request->allParam(), [
             "request" => $request,
             "response" => $response,
         ]));
