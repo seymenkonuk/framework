@@ -9,22 +9,39 @@
 namespace Seymenkonuk\Framework\Exception;
 
 
-use Exception;
+use RuntimeException;
 use Throwable;
 
 
-class ValidationException extends Exception
+/**
+ * Veri doğrulaması başarısız olduğunda oluşan hatayı temsil eder.
+ */
+class ValidationException extends RuntimeException
 {
-    /** @param array<string, mixed>|string $errors */
+    /**
+     * Yeni bir validation exception oluşturur.
+     *
+     * @param array<string, mixed> $errors doğrulama sırasında oluşan hatalar.
+     * @param ?Throwable $previous önceki exception veya null.
+     *
+     * @return void
+     */
     public function __construct(
-        protected array|string $errors,
+        protected readonly array $errors,
         ?Throwable $previous = null,
     ) {
-        parent::__construct("Doğrulama Hatası", previous: $previous);
+        parent::__construct(
+            "Validation failed.",
+            previous: $previous,
+        );
     }
 
-    /** @return array<string, mixed>|string */
-    public function errors(): array|string
+    /**
+     * Doğrulama hatalarını döndürür.
+     *
+     * @return array<string, mixed> doğrulama hataları.
+     */
+    public function errors(): array
     {
         return $this->errors;
     }

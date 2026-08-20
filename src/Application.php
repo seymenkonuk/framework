@@ -12,94 +12,109 @@ namespace Seymenkonuk\Framework;
 use Closure;
 use Throwable;
 
-use ReflectionFunction;
 use ReflectionNamedType;
 use ReflectionUnionType;
 use ReflectionIntersectionType;
 
-use Predis\Client as Redis;
-
-use Seymenkonuk\Framework\Cache\ICache;
-use Seymenkonuk\Framework\Cache\RedisCache;
-
-use Seymenkonuk\Validator\Localization\FileLoader;
-use Seymenkonuk\Validator\Localization\Translator;
-use Seymenkonuk\Validator\Validator\Validator;
+use Seymenkonuk\Framework\Http\Request\IRequest;
+use Seymenkonuk\Framework\Http\Response\IResponse;
+use Seymenkonuk\Framework\Http\Response\Response;
+use Seymenkonuk\Framework\Http\Response\ResponseState;
+use Seymenkonuk\Framework\Reflection\Reflect;
+use Seymenkonuk\Framework\Routing\RouteConfig;
+use Seymenkonuk\Framework\Routing\Router;
+use Seymenkonuk\Framework\TemplateEngine\ITemplateEngine;
+use Seymenkonuk\Framework\TemplateEngine\NullTemplateEngine;
 
 
 final class Application
 {
     // --------------------------------------------------------------------------
+    // CONSTANTS
+    // --------------------------------------------------------------------------
+
+    /**
+     * Uygulama tarafından kullanılacak varsayılan container binding'leri.
+     *
+     * Binding tanımı bulunmayan bağımlılıklar için bu eşleştirmeler kullanılır.
+     *
+     * @var array<class-string, class-string>
+     */
+    public const DEFAULT_BINDINGS = [
+        IResponse::class => Response::class,
+        ITemplateEngine::class => NullTemplateEngine::class,
+    ];
+
+    // --------------------------------------------------------------------------
     // PROPERTIES
     // --------------------------------------------------------------------------
 
-    protected Session $session;
-    protected ICache $cache;
-    protected Database $database;
-    protected Request $request;
-    protected Response $response;
+    /**
+     * Uygulamanın bağımlılıklarını çözümlemek için kullanılan container.
+     * 
+     * @var Container
+     */
     protected Container $container;
-    protected Router $router;
-    protected Validator $validator;
 
-    protected ?Closure $dbConnectCallback = null;
+    /**
+     * Uygulamanın route'larını yöneten router.
+     * 
+     * @var Router
+     */
+    protected Router $router;
+
+    /**
+     * Uygulama tarafından kullanılacak route yapılandırma sınıfını saklar.
+     *
+     * @var ?class-string<RouteConfig>
+     */
     protected ?string $routeConfig = null;
-    /** @var array<string, Closure(): Response> $exceptionCallbacks */
+
+    /**
+     * Exception türleri için tanımlanan handler'ları saklar.
+     *
+     * @var array<string, Closure(mixed...): IResponse>
+     */
     protected array $exceptionCallbacks = [];
 
     // --------------------------------------------------------------------------
     // CONSTRUCTOR
     // --------------------------------------------------------------------------
 
-    private function __construct(protected string $basePath)
+    /**
+     * Yeni bir application örneği oluşturur.
+     *
+     * @return void
+     */
+    public function __construct()
     {
-        $this->session = new Session();
-        $this->database = new Database();
-        $this->request = new Request();
-        $this->response = new Response(new TemplateEngine($basePath));
         $this->container = new Container();
         $this->router = new Router($this->container);
 
-        $this->validator = new Validator(new Translator(
-            new FileLoader(),
-            "tr",
-        ));
-
-        $redisConfig = [
-            "host" => getenv("REDIS_HOST") ?: "127.0.0.1",
-            "port" => getenv("REDIS_PORT") ?: "6379",
-        ];
-
-        $redisPassword = getenv("REDIS_PASSWORD") ?: "";
-
-        if ($redisPassword !== "") {
-            $redisConfig["password"] = $redisPassword;
-        }
-
-        $this->cache = new RedisCache(new Redis($redisConfig));
-
-        $this->container->bind(ICache::class, RedisCache::class);
-        $this->container->instance(ICache::class, $this->cache);
-        $this->container->instance(Session::class, $this->session);
-        $this->container->instance(Request::class, $this->request);
-        $this->container->instance(Response::class, $this->response);
-        $this->container->instance(Database::class, $this->database);
-        $this->container->instance(Validator::class, $this->validator);
+        $this->withBindings(self::DEFAULT_BINDINGS);
     }
 
     // --------------------------------------------------------------------------
-    // CONFIGURATION
+    // ROUTE CONFIGURATION
     // --------------------------------------------------------------------------
 
-    public static function configure(string $basePath): self
+    /**
+     * Uygulamanın router'ını döndürür.
+     *
+     * @return Router uygulamanın router'ı.
+     */
+    public function router(): Router
     {
-        return new self($basePath);
+        return $this->router;
     }
 
-    // --------------------------------------------------------------------------
-    // ROUTE CONFIG CALLBACK
-    // --------------------------------------------------------------------------
-
+    /**
+     * Uygulama tarafından kullanılacak route yapılandırmasını tanımlar.
+     *
+     * @param class-string<RouteConfig> $routeConfig kullanılacak route yapılandırma sınıfı.
+     *
+     * @return self
+     */
     public function withRouting(string $routeConfig): self
     {
         $this->routeConfig = $routeConfig;
@@ -107,12 +122,72 @@ final class Application
     }
 
     // --------------------------------------------------------------------------
+    // CONTAINER CONFIGURATION
+    // --------------------------------------------------------------------------
+
+    /**
+     * Container'a birden fazla sınıf bağlantısı kaydeder.
+     *
+     * @param array<class-string, class-string> $bindings sınıf ve bağlantılı sınıf eşleşmeleri.
+     *
+     * @return self
+     */
+    public function withBindings(array $bindings): self
+    {
+        foreach ($bindings as $abstract => $concrete) {
+            $this->container->bind($abstract, $concrete);
+        }
+        return $this;
+    }
+
+    /**
+     * Container'a birden fazla nesne örneği kaydeder.
+     *
+     * @param array<class-string, object> $instances sınıf ve nesne örneği eşleşmeleri.
+     *
+     * @return self
+     */
+    public function withInstances(array $instances): self
+    {
+        foreach ($instances as $class => $instance) {
+            $this->container->instance($class, $instance);
+        }
+
+        return $this;
+    }
+
+    /**
+     * Container'a birden fazla singleton factory'si kaydeder.
+     *
+     * @param array<class-string, Closure(mixed...): object> $singletons sınıf ve factory eşleşmeleri.
+     *
+     * @return self
+     */
+    public function withSingletons(array $singletons): self
+    {
+        foreach ($singletons as $class => $factory) {
+            $this->container->singleton($class, $factory);
+        }
+        return $this;
+    }
+
+    // --------------------------------------------------------------------------
     // GLOBAL EXCEPTION HANDLER
     // --------------------------------------------------------------------------
 
+    /**
+     * Global exception handler kaydeder.
+     *
+     * Callback'in `exception` adında bir parametresi bulunmalıdır.
+     * Bu parametrenin türüyle eşleşen exception'lar callback tarafından yakalanır.
+     *
+     * @param Closure(mixed...): IResponse $callback exception'ları işleyecek callback.
+     *
+     * @return self
+     */
     public function withException(Closure $callback): self
     {
-        $reflection = new ReflectionFunction($callback);
+        $reflection = Reflect::closure($callback);
 
         foreach ($reflection->getParameters() as $parameter) {
             if ($parameter->getName() !== "exception") {
@@ -139,47 +214,35 @@ final class Application
     }
 
     // --------------------------------------------------------------------------
-    // DATABASE CONFIG CALLBACK
-    // --------------------------------------------------------------------------
-
-    public function withDbConfig(
-        string $host,
-        string $port,
-        string $dbname,
-        string $charset,
-        string $username,
-        string $password,
-    ): self {
-        $this->dbConnectCallback
-            = fn() => $this->database->connect($host, $port, $dbname, $charset, $username, $password);
-        return $this;
-    }
-
-    // --------------------------------------------------------------------------
     // RUN
     // --------------------------------------------------------------------------
 
-    public function run(): void
+    /**
+     * Verilen HTTP isteğini uygulama üzerinden çalıştırır.
+     *
+     * İsteği işler ve oluşan response'u gönderir.
+     * 
+     * @param IRequest $request çalıştırılacak HTTP isteği.
+     *
+     * @return ResponseState gönderilen response'un state'i.
+     */
+    public function run(IRequest $request): ResponseState
     {
-        /** @var ?Response $response  */
-        $response = null;
-
         try {
+            // Çıktıları Buffer'da Topla
             ob_start();
 
-            // Veri Tabanına Bağlan
-            if ($this->dbConnectCallback !== null) {
-                $this->container->call($this->dbConnectCallback);
+            // Route Yapılandırmasını Yap
+            if ($this->routeConfig !== null) {
+                $routeConfig = new $this->routeConfig();
+                $routeConfig->register($this->router);
             }
 
-            // Route Yapılandırmasını Yap
-            if ($this->routeConfig !== null && method_exists($this->routeConfig, "register")) {
-                $this->container->call([$this->routeConfig, "register"], ["router" => $this->router]);
-            }
             // Controller'ı Çağır
-            $response = $this->router->dispatch($this->request);
+            $response = $this->router->dispatch($request);
         } catch (Throwable $e) {
-            $response = $this->handleException($e);
+            // Exception Handler'ı Çağır
+            $response = $this->handleException($e, $request);
         }
 
         // Bufferdakileri Çöpe At
@@ -187,16 +250,32 @@ final class Application
             ob_end_clean();
         }
 
-        // Response'u Göster
-        $response->send();
+        // Response'u Gönder
+        return $response->send();
     }
 
-    private function handleException(Throwable $e): Response
+    // --------------------------------------------------------------------------
+    // INTERNAL
+    // --------------------------------------------------------------------------
+
+    /**
+     * Verilen exception için kayıtlı handler'ı çalıştırır.
+     *
+     * Eşleşen bir handler bulunamazsa exception yeniden fırlatılır.
+     *
+     * @param Throwable $e işlenecek exception.
+     * @param IRequest $request exception handler'a verilecek request.
+     *
+     * @return IResponse exception handler tarafından oluşturulan response.
+     */
+    private function handleException(Throwable $e, IRequest $request): IResponse
     {
         foreach ($this->exceptionCallbacks as $exceptionClass => $callback) {
             if ($e instanceof $exceptionClass) {
-                /** @var Response $response */
-                $response = $this->container->call($callback, ["exception" => $e]);
+                $response = $this->container->call($callback, [
+                    "exception" => $e,
+                    "request" => $request,
+                ]);
                 return $response;
             }
         }

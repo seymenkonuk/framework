@@ -1,6 +1,6 @@
 {
     "name": "seymenkonuk/framework",
-    "description": "Modern PHP uygulamaları geliştirmek için tasarlanmış, hafif ve sade bir MVC framework'ü.",
+    "description": "Modern PHP uygulamaları için geliştirilmiş hafif, sade ve genişletilebilir bir framework.",
     "type": "framework",
     "license": "MIT",
     "authors": [
@@ -18,7 +18,7 @@
         "league/plates": "^3.6",
         "voku/html-min": "^4.5",
         "predis/predis": "^3.2",
-        "seymenkonuk/validator": "^1.0"
+        "seymenkonuk/validator": "^2.0"
     },
     "autoload-dev": {
         "psr-4": {

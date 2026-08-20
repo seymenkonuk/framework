@@ -1,20 +1,19 @@
 <?php
 // ============================================================================
-// File:    Schema.php
+// File:    ValidatorRequestSchema.php
 // Author:  Recep Seymen Konuk <konukrecepseymen@gmail.com>
 //
 // Licensed under the terms of the LICENSE file in the project root directory.
 // ============================================================================
 
-namespace Seymenkonuk\Framework;
+namespace Seymenkonuk\Framework\Http\RequestSchema;
 
 
 use Seymenkonuk\Validator\Validator\Validator;
 use Seymenkonuk\Validator\Validator\ObjectValidator;
-use Seymenkonuk\Validator\Validator\ValidationResult;
 
 
-abstract class Schema
+abstract class ValidatorRequestSchema implements IRequestSchema
 {
     // --------------------------------------------------------------------------
     //  DEPENDENCIES
@@ -55,7 +54,7 @@ abstract class Schema
             "query"  => $this->query(),
             "params" => $this->params(),
             "files"  => $this->files(),
-        ]);
+        ])->extra();
     }
 
     // --------------------------------------------------------------------------
@@ -64,16 +63,20 @@ abstract class Schema
 
     final public function validate(mixed $data, bool $exists = true): ValidationResult
     {
-        return $this->rules()->validate($data, $exists);
+        $result = $this->rules()->validate($data, $exists);
+        return new ValidationResult(
+            isValid: $result->passed(),
+            errors: $result->errors(),
+            validated: $result->validated(),
+        );
     }
 
     // --------------------------------------------------------------------------
-    //  AUTHORIZE
+    // DRIVER
     // --------------------------------------------------------------------------
 
-    // /** @return array{
-    //  *      title: string,
-    //  *      description: string
-    //  * }|null */
-    // abstract public function authorize(Request $request, ...$args): array|null;
+    public function driver(): string
+    {
+        return "seymenkonuk/validator";
+    }
 }

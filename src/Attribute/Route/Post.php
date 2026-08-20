@@ -15,9 +15,14 @@ use Attribute;
 #[Attribute(Attribute::TARGET_METHOD)]
 class Post extends Route
 {
+    /**
+     * HTTP POST metodu için bir route tanımlar.
+     * 
+     * @param string $uri route'un eşleşeceği URI.
+     */
     public function __construct(
-        public string $uri,
+        string $uri,
     ) {
-        parent::__construct(["POST"], $uri);
+        parent::__construct("POST", $uri);
     }
 }

@@ -9,32 +9,58 @@
 namespace Seymenkonuk\Framework\Cache;
 
 
-use Predis\Client as Redis;
+use Closure;
+use Predis\Client as Predis;
 
 
 final class RedisCache implements ICache
 {
+    // --------------------------------------------------------------------------
+    // CONSTANTS
+    // --------------------------------------------------------------------------
+
     private const PREFIX = "cache:";
+
+    // --------------------------------------------------------------------------
+    // PROPERTIES
+    // --------------------------------------------------------------------------
+
+    protected Predis $redis;
 
     // --------------------------------------------------------------------------
     // DEPENDENCIES
     // --------------------------------------------------------------------------
 
+    /**
+     * Belirtilen bilgilerle Redis bağlantısını başlatır.
+     *
+     * @param string $host Redis sunucusunun adresi.
+     * @param string $port Redis sunucusunun portu.
+     * @param ?string $password Redis sunucusu için kullanılacak şifre.
+     * @param int $databaseId kullanılacak Redis veritabanının kimliği.
+     *
+     * @return void
+     */
     public function __construct(
-        private Redis $redis,
-    ) {}
-
-    // --------------------------------------------------------------------------
-    // INTERNAL
-    // --------------------------------------------------------------------------
-
-    private function key(string $key): string
-    {
-        return self::PREFIX . $key;
+        string $host,
+        string $port,
+        ?string $password = null,
+        int $databaseId = 0,
+    ) {
+        $parameters = [
+            'scheme'   => 'tcp',
+            'host'     => $host,
+            'port'     => $port,
+            'database' => $databaseId,
+        ];
+        if ($password !== null) {
+            $parameters["password"] = $password;
+        }
+        $this->redis = new Predis($parameters);
     }
 
     // --------------------------------------------------------------------------
-    // BASIC
+    // GETTERS
     // --------------------------------------------------------------------------
 
     public function get(string $key, mixed $default = null): mixed
@@ -47,10 +73,24 @@ final class RedisCache implements ICache
             : $default;
     }
 
-    public function set(string $key, mixed $value, int $ttl = 0): bool
+    public function has(string $key): bool
+    {
+        $key = $this->key($key);
+        return (bool) $this->redis->exists($key);
+    }
+
+    // --------------------------------------------------------------------------
+    // SETTERS
+    // --------------------------------------------------------------------------
+
+    public function set(string $key, mixed $value, int $ttl = 0, bool $keepTtl = false): bool
     {
         $key = $this->key($key);
         $value = serialize($value);
+
+        if ($keepTtl) {
+            return $this->redis->set($key, $value, "KEEPTTL") == true;
+        }
 
         if ($ttl > 0) {
             return $this->redis->set($key, $value, "EX", $ttl) == true;
@@ -59,13 +99,7 @@ final class RedisCache implements ICache
         return $this->redis->set($key, $value) == true;
     }
 
-    public function has(string $key): bool
-    {
-        $key = $this->key($key);
-        return (bool) $this->redis->exists($key);
-    }
-
-    public function forget(string $key): bool
+    public function remove(string $key): bool
     {
         $key = $this->key($key);
         return (bool) $this->redis->del($key);
@@ -74,7 +108,7 @@ final class RedisCache implements ICache
     public function clear(): bool
     {
         $pattern = $this->key("*");
-        /** @var array<string> $keys */
+        /** @var array<string> */
         $keys = $this->redis->keys($pattern);
 
         if (empty($keys)) {
@@ -91,7 +125,7 @@ final class RedisCache implements ICache
     public function pull(string $key, mixed $default = null): mixed
     {
         $value = $this->get($key, $default);
-        $this->forget($key);
+        $this->remove($key);
         return $value;
     }
 
@@ -115,11 +149,6 @@ final class RedisCache implements ICache
     // MULTI
     // --------------------------------------------------------------------------
 
-    /**
-     * @param array<string> $keys
-     * @param mixed $default
-     * @return array<string, mixed>
-     */
     public function getMultiple(array $keys, mixed $default = null): array
     {
         $result = [];
@@ -129,19 +158,17 @@ final class RedisCache implements ICache
         return $result;
     }
 
-    /** @param array<string, mixed> $values */
-    public function setMultiple(array $values, int $ttl = 0): bool
+    public function setMultiple(array $values, int $ttl = 0, bool $keepTtl = false): bool
     {
-        $result = true;
+        $success = true;
         foreach ($values as $key => $value) {
-            $result2 = $this->set($key, $value, $ttl);
-            $result = $result && $result2;
+            $current = $this->set($key, $value, $ttl, $keepTtl);
+            $success = $success && $current;
         }
-        return $result;
+        return $success;
     }
 
-    /** @param array<string> $keys */
-    public function forgetMultiple(array $keys): bool
+    public function removeMultiple(array $keys): bool
     {
         $prefixed = array_map(fn($key) => $this->key($key), $keys);
         return (bool) $this->redis->del($prefixed);
@@ -164,7 +191,7 @@ final class RedisCache implements ICache
     }
 
     // --------------------------------------------------------------------------
-    // LOCK (Predis safe pattern)
+    // LOCK
     // --------------------------------------------------------------------------
 
     public function lock(string $key, int $ttl = 10): bool
@@ -175,7 +202,7 @@ final class RedisCache implements ICache
 
     public function unlock(string $key): bool
     {
-        return $this->forget("lock:$key");
+        return $this->remove("lock:$key");
     }
 
     public function isLocked(string $key): bool
@@ -187,7 +214,7 @@ final class RedisCache implements ICache
     // REMEMBER
     // --------------------------------------------------------------------------
 
-    public function remember(string $key, int $ttl, callable $callback): mixed
+    public function remember(string $key, int $ttl, Closure $callback): mixed
     {
         // Cache'de Varsa Onu Getir
         if ($this->has($key)) {
@@ -217,6 +244,15 @@ final class RedisCache implements ICache
     }
 
     // --------------------------------------------------------------------------
+    // DESTROY
+    // --------------------------------------------------------------------------
+
+    public function destroy(): bool
+    {
+        return $this->redis->flushdb() === "OK";
+    }
+
+    // --------------------------------------------------------------------------
     // DRIVER
     // --------------------------------------------------------------------------
 
@@ -225,8 +261,12 @@ final class RedisCache implements ICache
         return "redis (predis)";
     }
 
-    public function flush(): bool
+    // --------------------------------------------------------------------------
+    // INTERNAL
+    // --------------------------------------------------------------------------
+
+    private function key(string $key): string
     {
-        return $this->redis->flushdb() === "OK";
+        return self::PREFIX . $key;
     }
 }

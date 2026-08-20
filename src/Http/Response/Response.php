@@ -6,92 +6,140 @@
 // Licensed under the terms of the LICENSE file in the project root directory.
 // --------------------------------------------------------------------------===================================================
 
-namespace Seymenkonuk\Framework;
+namespace Seymenkonuk\Framework\Http\Response;
 
 
 use Seymenkonuk\Framework\Exception\FileNotFoundException;
+use Seymenkonuk\Framework\Http\Cookie\Cookie;
+use Seymenkonuk\Framework\TemplateEngine\ITemplateEngine;
 
 
-final class Response
+final class Response implements IResponse
 {
     // --------------------------------------------------------------------------
     // PROPERTIES
     // --------------------------------------------------------------------------
 
-    private int $statusCode = 200;
+    /**
+     * Response için kullanılan HTTP durum kodunu saklar.
+     * 
+     * @var int
+     */
+    protected int $statusCode = 200;
 
-    /** @var array<string, string> */
-    private array $headers = [];
+    /**
+     * Response'a ait HTTP header değerlerini saklar.
+     *
+     * @var array<string, string>
+     */
+    protected array $headers = [];
 
-    /** @var array<array{
-     *      name: string,
-     *      value: string,
-     *      expires: int,
-     *      path: string,
-     *      domain: string,
-     *      secure: bool,
-     *      httponly: bool
-     * }> */
-    private array $cookies = [];
+    /**
+     * Response'a ait cookie'leri saklar.
+     *
+     * @var array<string, Cookie>
+     */
+    protected array $cookies = [];
 
-    private string $body = "";
+    /**
+     * Response gövdesinin içeriğini saklar.
+     * 
+     * @var string
+     */
+    protected string $body = "";
 
-    private ?string $filePath = null;
-
-    private bool $sent = false;
+    /**
+     * Response olarak gönderilecek dosyanın path bilgisini saklar.
+     * 
+     * @var ?string
+     */
+    protected ?string $filePath = null;
 
     // --------------------------------------------------------------------------
     // DEPENDENCIES
     // --------------------------------------------------------------------------
 
+    /**
+     * Yeni bir response oluşturur.
+     *
+     * @param ITemplateEngine $template response içeriğini oluşturmak için kullanılan template engine.
+     *
+     * @return void
+     */
     public function __construct(
-        private TemplateEngine $template,
+        protected ITemplateEngine $template,
     ) {}
 
     // --------------------------------------------------------------------------
     // VIEW RENDERING
     // --------------------------------------------------------------------------
 
-    /** @param array<string, mixed> $data */
     public function view(string $viewName, array $data = []): self
     {
-        $this->body = $this->template->render($viewName, $data);
-        $this->headers["Content-Type"] = "text/html; charset=utf-8";
-        return $this;
+        return $this->content(
+            content: $this->template->render($viewName, $data),
+            contentType: "text/html; charset=utf-8",
+        );
     }
 
-    /** @param array<string, mixed> $data */
     public function component(string $componentName, array $data = []): self
     {
-        $this->body = $this->template->renderComponent($componentName, $data);
-        $this->headers["Content-Type"] = "text/html; charset=utf-8";
-        return $this;
+        return $this->content(
+            content: $this->template->renderComponent($componentName, $data),
+            contentType: "text/html; charset=utf-8",
+        );
     }
 
     // --------------------------------------------------------------------------
-    // BASIC RESPONSE TYPES
+    // CONTENT
     // --------------------------------------------------------------------------
 
-    /** @param array<mixed, mixed> $data */
+    public function content(string $content, string $contentType): self
+    {
+        $this->body = $content;
+        return $this->header("Content-Type", $contentType);
+    }
+
     public function json(array $data = []): self
     {
-        $this->body = json_encode($data, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
-        $this->headers["Content-Type"] = "application/json; charset=utf-8";
-        return $this;
+        return $this->content(
+            content: json_encode($data, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR),
+            contentType: "application/json; charset=utf-8",
+        );
     }
 
     public function html(string $content): self
     {
-        $this->body = $content;
-        $this->headers["Content-Type"] = "text/html; charset=utf-8";
-        return $this;
+        return $this->content(
+            content: $content,
+            contentType: "text/html; charset=utf-8",
+        );
     }
 
     public function text(string $content): self
     {
-        $this->body = $content;
-        $this->headers["Content-Type"] = "text/plain; charset=utf-8";
+        return $this->content(
+            content: $content,
+            contentType: "text/plain; charset=utf-8",
+        );
+    }
+
+    // --------------------------------------------------------------------------
+    // STATUS
+    // --------------------------------------------------------------------------
+
+    public function status(int $code): self
+    {
+        $this->statusCode = $code;
         return $this;
+    }
+
+    public function abort(int $code, array $data = []): self
+    {
+        return $this->content(
+            content: $this->template->renderError($code, $data),
+            contentType: "text/html; charset=utf-8",
+        )->status($code);
     }
 
     // --------------------------------------------------------------------------
@@ -100,13 +148,10 @@ final class Response
 
     public function redirect(string $url): self
     {
-        $this->headers["Location"] = $url;
-
         if ($this->statusCode < 300 || $this->statusCode >= 400) {
-            $this->statusCode = 302;
+            $this->status(302);
         }
-
-        return $this;
+        return $this->header("Location", $url);
     }
 
     // --------------------------------------------------------------------------
@@ -167,39 +212,33 @@ final class Response
         return $this;
     }
 
-    /** @param array<string, string> $headers */
     public function headers(array $headers): self
     {
         foreach ($headers as $key => $value) {
-            $this->headers[$key] = $value;
+            $this->header($key, $value);
         }
         return $this;
     }
 
     // --------------------------------------------------------------------------
-    // STATUS CORE
+    // COOKIES
     // --------------------------------------------------------------------------
 
-    public function status(int $code): self
+    public function cookie(Cookie $cookie): self
     {
-        $this->statusCode = $code;
+        $this->cookies[$cookie->name()] = $cookie;
         return $this;
     }
 
-    /** @param array<string, mixed> $data */
-    public function abort(int $code, array $data = []): self
+    public function forgetCookie(string $name, string $path = "/", string $domain = ""): self
     {
-        $this->statusCode = $code;
-        $this->body = $this->template->renderError($code, $data);
-        $this->headers["Content-Type"] = "text/html; charset=utf-8";
-        return $this;
+        return $this->cookie(Cookie::forget($name, $path, $domain));
     }
 
     // --------------------------------------------------------------------------
     // JSON HELPERS
     // --------------------------------------------------------------------------
 
-    /** @param array<mixed, mixed> $data */
     public function jsonSuccess(string $message, array $data = []): self
     {
         return $this->status(200)->json([
@@ -209,7 +248,6 @@ final class Response
         ]);
     }
 
-    /** @param array<mixed, mixed> $errors */
     public function jsonError(string $message, array $errors = [], int $status = 400): self
     {
         return $this->status($status)->json([
@@ -220,39 +258,7 @@ final class Response
     }
 
     // --------------------------------------------------------------------------
-    // COOKIES
-    // --------------------------------------------------------------------------
-
-    public function cookie(
-        string $name,
-        string $value,
-        int $maxAge = 0,
-        string $path = "/",
-        string $domain = "",
-        bool $secure = false,
-        bool $httpOnly = true
-    ): self {
-
-        $this->cookies[] = [
-            "name" => $name,
-            "value" => $value,
-            "expires" => time() + $maxAge,
-            "path" => $path,
-            "domain" => $domain,
-            "secure" => $secure,
-            "httponly" => $httpOnly,
-        ];
-
-        return $this;
-    }
-
-    public function forgetCookie(string $name): self
-    {
-        return $this->cookie($name, "", -3600);
-    }
-
-    // --------------------------------------------------------------------------
-    // GENERIC SHORTCUTS (200 OK family)
+    // SUCCESS SHORTCUTS
     // --------------------------------------------------------------------------
 
     public function ok(): self
@@ -275,14 +281,14 @@ final class Response
         return $this->status(204)->text("");
     }
 
-    // --------------------------------------------------------------------------
-    // REDIRECTION SHORTCUTS (3xx)
-    // --------------------------------------------------------------------------
-
-    public function multipleChoices(string $url): self
+    public function partialContent(): self
     {
-        return $this->status(300)->redirect($url);
+        return $this->status(206);
     }
+
+    // --------------------------------------------------------------------------
+    // REDIRECTION SHORTCUTS
+    // --------------------------------------------------------------------------
 
     public function movedPermanently(string $url): self
     {
@@ -304,11 +310,6 @@ final class Response
         return $this->status(304);
     }
 
-    public function useProxy(string $url): self
-    {
-        return $this->status(305)->redirect($url);
-    }
-
     public function temporaryRedirect(string $url): self
     {
         return $this->status(307)->redirect($url);
@@ -320,7 +321,7 @@ final class Response
     }
 
     // --------------------------------------------------------------------------
-    // CLIENT ERROR SHORTCUTS (4xx)
+    // CLIENT ERROR SHORTCUTS
     // --------------------------------------------------------------------------
 
     public function badRequest(): self
@@ -331,11 +332,6 @@ final class Response
     public function unauthorized(): self
     {
         return $this->status(401);
-    }
-
-    public function paymentRequired(): self
-    {
-        return $this->status(402);
     }
 
     public function forbidden(): self
@@ -358,6 +354,11 @@ final class Response
         return $this->status(409);
     }
 
+    public function unsupportedMediaType(): self
+    {
+        return $this->status(415);
+    }
+
     public function unprocessableEntity(): self
     {
         return $this->status(422);
@@ -369,7 +370,7 @@ final class Response
     }
 
     // --------------------------------------------------------------------------
-    // SERVER ERROR SHORTCUTS (5xx)
+    // SERVER ERROR SHORTCUTS
     // --------------------------------------------------------------------------
 
     public function internalServerError(): self
@@ -382,107 +383,32 @@ final class Response
         return $this->status(501);
     }
 
-    public function badGateway(): self
-    {
-        return $this->status(502);
-    }
-
     public function serviceUnavailable(): self
     {
         return $this->status(503);
     }
 
-    public function gatewayTimeout(): self
+    // --------------------------------------------------------------------------
+    // STATE
+    // --------------------------------------------------------------------------
+
+    public function state(): ResponseState
     {
-        return $this->status(504);
+        return new ResponseState(
+            $this->statusCode,
+            $this->headers,
+            $this->cookies,
+            $this->body,
+            $this->filePath,
+        );
     }
 
     // --------------------------------------------------------------------------
-    // GETTERS
+    // OUTPUT
     // --------------------------------------------------------------------------
 
-    public function getStatus(): int
+    public function send(): ResponseState
     {
-        return $this->statusCode;
-    }
-
-    /** @return array<string, string> */
-    public function getHeaders(): array
-    {
-        return $this->headers;
-    }
-
-    public function getHeader(string $key): ?string
-    {
-        $headers = $this->getHeaders();
-        return $this->hasHeader($key) ? $headers[$key] : null;
-    }
-
-    public function hasHeader(string $key): bool
-    {
-        $headers = $this->getHeaders();
-        return array_key_exists($key, $headers);
-    }
-
-    /** @return array<array{
-     *      name: string,
-     *      value: string,
-     *      expires: int,
-     *      path: string,
-     *      domain: string,
-     *      secure: bool,
-     *      httponly: bool
-     * }> */
-    public function getCookies(): array
-    {
-        return $this->cookies;
-    }
-
-    /** @return ?array{
-     *      name: string,
-     *      value: string,
-     *      expires: int,
-     *      path: string,
-     *      domain: string,
-     *      secure: bool,
-     *      httponly: bool
-     * } */
-    public function getCookie(string $key): ?array
-    {
-        $cookies = $this->getCookies();
-        return $this->hasCookie($key) ? $cookies[$key] : null;
-    }
-
-    public function hasCookie(string $key): bool
-    {
-        $cookies = $this->getCookies();
-        return array_key_exists($key, $cookies);
-    }
-
-    public function getBody(): string
-    {
-        return $this->body;
-    }
-
-    public function getFilePath(): ?string
-    {
-        return $this->filePath;
-    }
-
-    // --------------------------------------------------------------------------
-    // CORE OUTPUT
-    // --------------------------------------------------------------------------
-
-    public function send(): void
-    {
-        // Daha Önce Gönderildiyse Bir Daha Gönderme
-        if ($this->sent) {
-            return;
-        }
-
-        // Flag Set Et
-        $this->sent = true;
-
         // Durum Kodunu Ayarla
         http_response_code($this->statusCode);
 
@@ -494,16 +420,15 @@ final class Response
         // Cookieleri Ekle
         foreach ($this->cookies as $cookie) {
             setcookie(
-                $cookie["name"],
-                $cookie["value"],
-                [
-                    "expires" => $cookie["expires"],
-                    "path" => $cookie["path"],
-                    "domain" => $cookie["domain"],
-                    "secure" => $cookie["secure"],
-                    "httponly" => $cookie["httponly"],
-                    "samesite" => "Lax",
-                ]
+                $cookie->name(),
+                is_scalar($cookie->value())
+                    ? (string) $cookie->value()
+                    : serialize($cookie->value()),
+                $cookie->expires(),
+                $cookie->path(),
+                $cookie->domain(),
+                $cookie->secure(),
+                $cookie->httpOnly(),
             );
         }
 
@@ -511,10 +436,10 @@ final class Response
         if ($this->filePath !== null) {
             header("Content-Length: " . filesize($this->filePath));
             readfile($this->filePath);
-            return;
+        } else {
+            echo $this->body;
         }
 
-        // Body'i Yazdır
-        echo $this->body;
+        return $this->state();
     }
 }

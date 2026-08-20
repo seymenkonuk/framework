@@ -1,27 +1,24 @@
 <?php
 // ============================================================================
-// File:    Middleware.php
+// File:    IAuthService.php
 // Author:  Recep Seymen Konuk <konukrecepseymen@gmail.com>
 //
 // Licensed under the terms of the LICENSE file in the project root directory.
 // ============================================================================
 
-namespace Seymenkonuk\Framework;
+namespace Seymenkonuk\Framework\Auth;
 
 
-abstract class Middleware
+interface IAuthService
 {
     // --------------------------------------------------------------------------
-    // DEPENDENCIES
+    // AUTHENTICATION
     // --------------------------------------------------------------------------
 
-    // public function __construct(
-    //     protected Response $response
-    // ) {}
-
-    // --------------------------------------------------------------------------
-    // HANDLE
-    // --------------------------------------------------------------------------
-
-    // abstract public function handle(Request $request, callable $next): Response;
+    /**
+     * Kullanıcının kimliğinin doğrulanmış olup olmadığını döndürür.
+     *
+     * @return bool kullanıcı giriş yapmışsa true, aksi halde false.
+     */
+    public function authenticated(): bool;
 }

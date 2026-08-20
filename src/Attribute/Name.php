@@ -15,7 +15,14 @@ use Attribute;
 #[Attribute(Attribute::TARGET_METHOD)]
 class Name
 {
+    /**
+     * Route için benzersiz bir isim tanımlar.
+     *
+     * Tanımlanan isim, route'a daha sonra isim üzerinden erişilmesini sağlar.
+     *
+     * @param string $name route için kullanılacak isim.
+     */
     public function __construct(
-        public string $name,
+        public readonly string $name,
     ) {}
 }

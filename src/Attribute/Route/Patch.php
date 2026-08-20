@@ -15,9 +15,14 @@ use Attribute;
 #[Attribute(Attribute::TARGET_METHOD)]
 class Patch extends Route
 {
+    /**
+     * HTTP PATCH metodu için bir route tanımlar.
+     * 
+     * @param string $uri route'un eşleşeceği URI.
+     */
     public function __construct(
-        public string $uri,
+        string $uri,
     ) {
-        parent::__construct(["PATCH"], $uri);
+        parent::__construct("PATCH", $uri);
     }
 }

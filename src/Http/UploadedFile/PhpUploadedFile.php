@@ -1,27 +1,30 @@
 <?php
 // ============================================================================
-// File:    UploadedFile.php
+// File:    PhpUploadedFile.php
 // Author:  Recep Seymen Konuk <konukrecepseymen@gmail.com>
 //
 // Licensed under the terms of the LICENSE file in the project root directory.
 // ============================================================================
 
-namespace Seymenkonuk\Framework;
+namespace Seymenkonuk\Framework\Http\UploadedFile;
 
 
 use finfo;
 
 use Seymenkonuk\Framework\Exception\FileUploadException;
 
-use Seymenkonuk\Validator\Contract\IFile;
 
-
-final class UploadedFile implements IFile
+final class PhpUploadedFile implements IUploadedFile
 {
     // --------------------------------------------------------------------------
-    //  CACHES
+    //  PROPERTIES
     // --------------------------------------------------------------------------
 
+    /**
+     * Hesaplanan MIME türünü tekrar hesaplanmaması için saklar.
+     *
+     * @var ?string
+     */
     private ?string $cachedMime = null;
 
     // --------------------------------------------------------------------------
@@ -29,53 +32,59 @@ final class UploadedFile implements IFile
     // --------------------------------------------------------------------------
 
     /**
+     * Belirtilen PHP dosya bilgileriyle dosya nesnesini oluşturur.
+     *
      * @param array{
      *     name: string,
      *     type: string,
-     *     full_path?: string,
      *     tmp_name: string,
      *     error: int,
      *     size: int
-     * } $file
+     * } $file PHP tarafından sağlanan dosya bilgileri.
+     *
+     * @return void
      */
-    public function __construct(private array $file) {}
+    public function __construct(
+        protected array $file,
+    ) {}
 
     // --------------------------------------------------------------------------
-    //  IS VALID
+    //  GETTERS
     // --------------------------------------------------------------------------
 
-    public function isValid(): bool
+    public function valid(): bool
     {
         return $this->file["error"] === UPLOAD_ERR_OK
             && is_uploaded_file($this->file["tmp_name"]);
     }
 
-    // --------------------------------------------------------------------------
-    //  PROPERTIES
-    // --------------------------------------------------------------------------
-
-    public function getName(): string
+    public function name(): string
     {
         return basename($this->file["name"]);
     }
 
-    public function getSize(): int
+    public function temp(): string
+    {
+        return $this->file["tmp_name"];
+    }
+
+    public function size(): int
     {
         return $this->file["size"];
     }
 
-    public function getExtension(): string
+    public function extension(): string
     {
         return strtolower(pathinfo($this->file["name"], PATHINFO_EXTENSION));
     }
 
-    public function getMimeType(): string
+    public function mime(): string
     {
         if ($this->cachedMime !== null) {
             return $this->cachedMime;
         }
 
-        if (!$this->isValid()) {
+        if (!$this->valid()) {
             throw new FileUploadException("Invalid upload", $this->file["error"]);
         }
 
@@ -86,18 +95,13 @@ final class UploadedFile implements IFile
         return $this->cachedMime;
     }
 
-    public function getTmpPath(): string
-    {
-        return $this->file["tmp_name"];
-    }
-
     // --------------------------------------------------------------------------
     //  MOVE
     // --------------------------------------------------------------------------
 
     public function move(string $destination, ?string $newName = null): string
     {
-        if (!$this->isValid()) {
+        if (!$this->valid()) {
             throw new FileUploadException("Invalid upload", $this->file["error"]);
         }
 
@@ -105,12 +109,12 @@ final class UploadedFile implements IFile
             throw new FileUploadException("Failed to create directory");
         }
 
-        $newName ??= $this->getName();
+        $newName ??= $this->name();
         $newName = basename($newName);
 
         $target = rtrim($destination, "/") . "/" . ltrim($newName, "/");
 
-        if (!move_uploaded_file($this->getTmpPath(), $target)) {
+        if (!move_uploaded_file($this->temp(), $target)) {
             throw new FileUploadException("Move failed");
         }
 

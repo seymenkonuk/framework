@@ -9,23 +9,40 @@
 namespace Seymenkonuk\Framework\Exception;
 
 
-use Exception;
+use RuntimeException;
 use Throwable;
 
 
-class FileNotFoundException extends Exception
+/**
+ * İstenen dosya bulunamadığında oluşan hatayı temsil eder.
+ */
+class FileNotFoundException extends RuntimeException
 {
+    /**
+     * Yeni bir file not found exception oluşturur.
+     *
+     * @param string $path bulunamayan dosyanın yolu.
+     * @param ?Throwable $previous önceki exception veya null.
+     *
+     * @return void
+     */
     public function __construct(
-        string $path = '',
-        int $code = 404,
+        protected readonly string $path,
         ?Throwable $previous = null,
     ) {
-        $message = 'File not found';
+        parent::__construct(
+            "File not found: {$path}",
+            previous: $previous,
+        );
+    }
 
-        if ($path !== '') {
-            $message .= ": {$path}";
-        }
-
-        parent::__construct($message, $code, $previous);
+    /**
+     * Bulunamayan dosyanın yolunu döndürür.
+     *
+     * @return string dosya yolu.
+     */
+    public function path(): string
+    {
+        return $this->path;
     }
 }
