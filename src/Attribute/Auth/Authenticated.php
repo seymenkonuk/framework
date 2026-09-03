@@ -11,9 +11,11 @@ namespace Seymenkonuk\Framework\Attribute\Auth;
 
 use Attribute;
 
+use Seymenkonuk\Framework\Http\Middleware\AuthenticatedMiddleware;
+
 
 #[Attribute(Attribute::TARGET_CLASS | Attribute::TARGET_METHOD)]
-class Authenticated
+class Authenticated extends Authenticate
 {
     /**
      * Route'un yalnızca kimliği doğrulanmış kullanıcılar tarafından
@@ -25,5 +27,8 @@ class Authenticated
      * Sınıf ve metot seviyesinde farklı bir authentication kuralı tanımlanmışsa
      * metot seviyesinde tanımlanan kural geçerli olur.
      */
-    public function __construct() {}
+    public function __construct()
+    {
+        parent::__construct(AuthenticatedMiddleware::class);
+    }
 }

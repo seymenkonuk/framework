@@ -18,6 +18,7 @@ use Seymenkonuk\Framework\Attribute\Middleware as MiddlewareAttribute;
 use Seymenkonuk\Framework\Attribute\Name;
 use Seymenkonuk\Framework\Attribute\Prefix;
 use Seymenkonuk\Framework\Attribute\Schema;
+use Seymenkonuk\Framework\Attribute\Auth\Authenticate;
 use Seymenkonuk\Framework\Attribute\Route\Route as RouteAttribute;
 use Seymenkonuk\Framework\Attribute\Where\Where;
 
@@ -51,6 +52,7 @@ final class Router
     private const SINGLE_ATTRIBUTES = [
         Name::class,
         Schema::class,
+        Authenticate::class,
     ];
 
     /**

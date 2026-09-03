@@ -11,9 +11,11 @@ namespace Seymenkonuk\Framework\Attribute\Auth;
 
 use Attribute;
 
+use Seymenkonuk\Framework\Http\Middleware\AnonymousOnlyMiddleware;
+
 
 #[Attribute(Attribute::TARGET_CLASS | Attribute::TARGET_METHOD)]
-class AnonymousOnly
+class AnonymousOnly extends Authenticate
 {
     /**
      * Route'un yalnızca kimliği doğrulanmamış kullanıcılar tarafından
@@ -25,5 +27,8 @@ class AnonymousOnly
      * Sınıf ve metot seviyesinde farklı bir authentication kuralı tanımlanmışsa
      * metot seviyesinde tanımlanan kural geçerli olur.
      */
-    public function __construct() {}
+    public function __construct()
+    {
+        parent::__construct(AnonymousOnlyMiddleware::class);
+    }
 }
