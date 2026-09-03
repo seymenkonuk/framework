@@ -124,7 +124,7 @@ final class Container
     public function make(string $class): object
     {
         // Bağlantılı sınıfı al.
-        $class = $this->getBinding($class);
+        $class = $this->resolveBinding($class);
 
         // Daha önce oluşturulmuş nesne örneğini al.
         $instance = $this->getInstance($class);
@@ -211,6 +211,51 @@ final class Container
     {
         // @phpstan-ignore return.type
         return $this->bindings[$class] ?? $class;
+    }
+
+    /**
+     * Sınıf için kayıtlı bağlantı olup olmadığını döndürür.
+     *
+     * @template T of object
+     *
+     * @param class-string<T> $class kontrol edilecek sınıf.
+     *
+     * @return bool binding tanımlanmışsa true, aksi halde false.
+     */
+    private function hasBinding(string $class): bool
+    {
+        return array_key_exists($class, $this->bindings);
+    }
+
+    /**
+     * Sınıf için tanımlanmış binding zincirini çözer.
+     *
+     * @template T of object
+     *
+     * @param class-string<T> $class çözümlenecek sınıf.
+     *
+     * @throws RuntimeException döngüsel binding zinciri tespit edildiğinde hata fırlatılır.
+     * 
+     * @return class-string<T> binding zincirinin sonunda bulunan sınıf.
+     */
+    private function resolveBinding(string $class): string
+    {
+        $resolved = [];
+
+        while ($this->hasBinding($class)) {
+            // Daha Önce Bu Sınıfla Zaten Karşılaştıysan Döngü Vardır
+            if (isset($resolved[$class])) {
+                throw new RuntimeException("Circular binding detected for {$class}.");
+            }
+
+            // Döngü Tespiti için Bu Sınıfı Kaydet
+            $resolved[$class] = true;
+
+            // Bağlantılı Sınıfı Al
+            $class = $this->getBinding($class);
+        }
+
+        return $class;
     }
 
     /**
