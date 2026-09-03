@@ -13,6 +13,8 @@ use Closure;
 
 use Seymenkonuk\Framework\Http\Controller;
 use Seymenkonuk\Framework\Http\Middleware;
+use Seymenkonuk\Framework\Http\Middleware\AnonymousOnlyMiddleware;
+use Seymenkonuk\Framework\Http\Middleware\AuthenticatedMiddleware;
 use Seymenkonuk\Framework\Http\RequestSchema\IRequestSchema;
 use Seymenkonuk\Framework\Http\Response\IResponse;
 
@@ -33,6 +35,7 @@ final class Route
      * @param array<string, string> $where URI parametreleri için kullanılacak regex kuralları.
      * @param ?class-string<IRequestSchema> $schema isteği doğrulamak için kullanılacak schema sınıfı.
      * @param ?string $name route'un adı.
+     * @param ?class-string<Middleware> $authMiddleware auth için kullanılacak middleware sınıfı.
      *
      * @return void
      */
@@ -44,6 +47,7 @@ final class Route
         protected array $where = [],
         protected ?string $schema = null,
         protected ?string $name = null,
+        protected ?string $authMiddleware = null,
     ) {}
 
     // ------------------------------------------------------------------
@@ -248,6 +252,45 @@ final class Route
         return $this;
     }
 
+    // ------------------------------------------------------------------
+    // AUTHENTICATION
+    // ------------------------------------------------------------------
+
+    /**
+     * Route için belirtilen authentication middleware'ini kullanır.
+     *
+     * @param class-string<Middleware> $middleware authentication middleware sınıfı.
+     *
+     * @return self güncellenmiş route.
+     */
+    public function authenticate(string $middleware): self
+    {
+        $this->authMiddleware = $middleware;
+        return $this;
+    }
+
+    /**
+     * Route'un yalnızca anonim kullanıcılar tarafından erişilebilir olmasını sağlar.
+     *
+     * @return self güncellenmiş route.
+     */
+    public function anonymousOnly(): self
+    {
+        $this->authMiddleware = AnonymousOnlyMiddleware::class;
+        return $this;
+    }
+
+    /**
+     * Route'un yalnızca kimliği doğrulanmış kullanıcılar tarafından erişilebilir olmasını sağlar.
+     *
+     * @return self güncellenmiş route.
+     */
+    public function authenticated(): self
+    {
+        $this->authMiddleware = AuthenticatedMiddleware::class;
+        return $this;
+    }
+
     // --------------------------------------------------------------------------
     // STATE
     // --------------------------------------------------------------------------
@@ -259,11 +302,18 @@ final class Route
      */
     public function state(): RouteState
     {
+        // Auth Middleware Eklenmiş Middleware Listesini Oluştur
+        $middleware = $this->middleware;
+        if ($this->authMiddleware !== null) {
+            $middleware[] = $this->authMiddleware;
+        }
+
+        // State Oluştur
         return new RouteState(
             $this->methods,
             $this->uri,
             $this->handler,
-            $this->middleware,
+            $middleware,
             $this->where,
             $this->schema,
             $this->name,
