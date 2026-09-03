@@ -16,13 +16,22 @@ use ReflectionNamedType;
 use ReflectionUnionType;
 use ReflectionIntersectionType;
 
+use Seymenkonuk\Framework\Flash\IFlash;
+use Seymenkonuk\Framework\Flash\SessionFlash;
+
 use Seymenkonuk\Framework\Http\Request\IRequest;
 use Seymenkonuk\Framework\Http\Response\IResponse;
 use Seymenkonuk\Framework\Http\Response\Response;
 use Seymenkonuk\Framework\Http\Response\ResponseState;
+
 use Seymenkonuk\Framework\Reflection\Reflect;
+
 use Seymenkonuk\Framework\Routing\RouteConfig;
 use Seymenkonuk\Framework\Routing\Router;
+
+use Seymenkonuk\Framework\Session\ISession;
+use Seymenkonuk\Framework\Session\PhpSession;
+
 use Seymenkonuk\Framework\TemplateEngine\ITemplateEngine;
 use Seymenkonuk\Framework\TemplateEngine\NullTemplateEngine;
 
@@ -41,7 +50,9 @@ final class Application
      * @var array<class-string, class-string>
      */
     public const DEFAULT_BINDINGS = [
+        IFlash::class => SessionFlash::class,
         IResponse::class => Response::class,
+        ISession::class => PhpSession::class,
         ITemplateEngine::class => NullTemplateEngine::class,
     ];
 
@@ -236,6 +247,12 @@ final class Application
             if ($this->routeConfig !== null) {
                 $routeConfig = new $this->routeConfig();
                 $routeConfig->register($this->router);
+            }
+
+            // Flash Verilerinin Yaşam Döngüsünü İlerlet
+            if ($this->container->canMake(IFlash::class)) {
+                $flash = $this->container->make(IFlash::class);
+                $flash->age();
             }
 
             // Controller'ı Çağır
