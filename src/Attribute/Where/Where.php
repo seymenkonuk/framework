@@ -11,9 +11,13 @@ namespace Seymenkonuk\Framework\Attribute\Where;
 
 use Attribute;
 
+use Seymenkonuk\Framework\Attribute\IRouteModifier;
+
+use Seymenkonuk\Framework\Routing\Route;
+
 
 #[Attribute(Attribute::TARGET_METHOD | Attribute::IS_REPEATABLE)]
-class Where
+class Where implements IRouteModifier
 {
     /**
      * Route parametrelerinden biri için eşleşme kuralı tanımlar.
@@ -25,4 +29,9 @@ class Where
         public readonly string $key,
         public readonly string $pattern,
     ) {}
+
+    public function apply(Route $route): void
+    {
+        $route->where($this->key, $this->pattern);
+    }
 }

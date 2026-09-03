@@ -11,9 +11,11 @@ namespace Seymenkonuk\Framework\Attribute;
 
 use Attribute;
 
+use Seymenkonuk\Framework\Routing\Route;
+
 
 #[Attribute(Attribute::TARGET_METHOD)]
-class Name
+class Name implements IRouteModifier
 {
     /**
      * Route için benzersiz bir isim tanımlar.
@@ -25,4 +27,9 @@ class Name
     public function __construct(
         public readonly string $name,
     ) {}
+
+    public function apply(Route $route): void
+    {
+        $route->name($this->name);
+    }
 }

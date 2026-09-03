@@ -13,9 +13,11 @@ use Attribute;
 
 use Seymenkonuk\Framework\Http\RequestSchema\IRequestSchema;
 
+use Seymenkonuk\Framework\Routing\Route;
+
 
 #[Attribute(Attribute::TARGET_METHOD)]
-class Schema
+class Schema implements IRouteModifier
 {
     /**
      * Route için kullanılacak request schema sınıfını tanımlar.
@@ -28,4 +30,9 @@ class Schema
     public function __construct(
         public readonly string $schema,
     ) {}
+
+    public function apply(Route $route): void
+    {
+        $route->schema($this->schema);
+    }
 }

@@ -13,9 +13,11 @@ use Attribute;
 
 use Seymenkonuk\Framework\Http\Middleware as HttpMiddleware;
 
+use Seymenkonuk\Framework\Routing\Route;
+
 
 #[Attribute(Attribute::TARGET_CLASS | Attribute::TARGET_METHOD | Attribute::IS_REPEATABLE)]
-class Middleware
+class Middleware implements IRouteModifier
 {
     /**
      * Route'a uygulanacak middleware sınıfını tanımlar.
@@ -30,4 +32,9 @@ class Middleware
     public function __construct(
         public readonly string $middleware,
     ) {}
+
+    public function apply(Route $route): void
+    {
+        $route->middleware($this->middleware);
+    }
 }
