@@ -21,6 +21,10 @@ use Seymenkonuk\Framework\Reflection\Reflect;
 
 final class Container
 {
+    // --------------------------------------------------------------------------
+    // PROPERTIES
+    // --------------------------------------------------------------------------
+
     /**
      * İki sınıf arasındaki bağlantıları saklar.
      *
@@ -147,6 +151,37 @@ final class Container
         return $this->build($class);
     }
 
+    /**
+     * Belirtilen sınıfın container tarafından çözümlenip çözümlenemeyeceğini
+     * kontrol eder.
+     *
+     * @template T of object
+     *
+     * @param class-string<T> $class kontrol edilecek sınıf.
+     *
+     * @return bool sınıf çözümlenebiliyorsa true, aksi halde false.
+     */
+    public function canMake(string $class): bool
+    {
+        // Bağlantılı sınıfı al.
+        $class = $this->resolveBinding($class);
+
+        // Daha önce oluşturulmuş nesne örneği mevcutsa çözümlenebilir.
+        $instance = $this->getInstance($class);
+        if (isset($instance)) {
+            return true;
+        }
+
+        // Singleton factory'si varsa ve çağrılabiliyorsa çözümlenebilir.
+        $factory = $this->getSingleton($class);
+        if (isset($factory)) {
+            return $this->canCall($factory);
+        }
+
+        // Sınıfın oluşturulup oluşturulamayacağını kontrol et.
+        return $this->canBuild($class);
+    }
+
     // --------------------------------------------------------------------------
     // INVOCATION
     // --------------------------------------------------------------------------
@@ -177,6 +212,27 @@ final class Container
         );
 
         return Reflect::invoke($callback, $dependencies);
+    }
+
+    /**
+     * Belirtilen işlevin verilen parametrelerle çalıştırılıp çalıştırılamayacağını
+     * kontrol eder.
+     *
+     * @template T
+     *
+     * @param Closure(mixed...): T $callback kontrol edilecek işlev.
+     * @param array<string, mixed> $parameters işleve aktarılacak parametreler.
+     *
+     * @return bool işlev çalıştırılabiliyorsa true, aksi halde false.
+     */
+    public function canCall(Closure $callback, array $parameters = []): bool
+    {
+        $reflection = Reflect::closure($callback);
+
+        return $this->canResolveParameters(
+            $reflection->getParameters(),
+            $parameters,
+        );
     }
 
     // --------------------------------------------------------------------------
@@ -296,6 +352,34 @@ final class Container
     }
 
     /**
+     * Belirtilen sınıftan bir nesne oluşturulup oluşturulamayacağını kontrol eder.
+     *
+     * Sınıfın constructor bağımlılıklarının container üzerinden çözülüp
+     * çözülemeyeceği kontrol edilir.
+     * 
+     * @template T of object
+     *
+     * @param class-string<T> $class kontrol edilecek sınıf.
+     *
+     * @return bool sınıf oluşturulabiliyorsa true, aksi halde false.
+     */
+    private function canBuild(string $class): bool
+    {
+        $reflection = Reflect::class($class);
+
+        // Sınıf oluşturulabilir değilse bağımlılık çözümlenemez.
+        if (! $reflection->isInstantiable()) {
+            return false;
+        }
+
+        $constructor = Reflect::constructor($class);
+
+        return $this->canResolveParameters(
+            $constructor?->getParameters() ?? [],
+        );
+    }
+
+    /**
      * Belirtilen reflection parametreleri için gerekli bağımlılıkları çözümler.
      *
      * Sağlanan parametreler öncelikli olarak kullanılır; eksik parametreler
@@ -320,15 +404,15 @@ final class Container
 
             $type = $parameter->getType();
 
-            if ($type instanceof ReflectionNamedType && !$type->isBuiltin()) {
-                /** @var class-string $className */
-                $className = $type->getName();
-                $resolved[] = $this->make($className);
+            if ($parameter->isDefaultValueAvailable()) {
+                $resolved[] = $parameter->getDefaultValue();
                 continue;
             }
 
-            if ($parameter->isDefaultValueAvailable()) {
-                $resolved[] = $parameter->getDefaultValue();
+            if ($type instanceof ReflectionNamedType && !$type->isBuiltin()) {
+                /** @var class-string */
+                $className = $type->getName();
+                $resolved[] = $this->make($className);
                 continue;
             }
 
@@ -336,5 +420,49 @@ final class Container
         }
 
         return $resolved;
+    }
+
+    /**
+     * Belirtilen reflection parametrelerinin çözümlenip
+     * çözümlenemeyeceğini kontrol eder.
+     *
+     * Sağlanan parametreler öncelikli olarak kullanılır; eksik parametreler
+     * container üzerinden çözümlenir.
+     *
+     * @param array<ReflectionParameter> $parameters kontrol edilecek parametreler.
+     * @param array<string, mixed> $provided dışarıdan sağlanan parametreler.
+     *
+     * @return bool tüm parametreler çözümlenebiliyorsa true, aksi halde false.
+     */
+    private function canResolveParameters(array $parameters, array $provided = []): bool
+    {
+        foreach ($parameters as $parameter) {
+            // Dışarıdan sağlanan parametrelerin çözümlenmesine gerek yok.
+            if (array_key_exists($parameter->getName(), $provided)) {
+                continue;
+            }
+
+            // Varsayılan değeri olan parametrelerin çözümlenmesine gerek yok.
+            if ($parameter->isDefaultValueAvailable()) {
+                continue;
+            }
+
+            $type = $parameter->getType();
+
+            // Sınıf bağımlılığı değilse çözümlenemez.
+            if (! $type instanceof ReflectionNamedType || $type->isBuiltin()) {
+                return false;
+            }
+
+            /** @var class-string */
+            $className = $type->getName();
+
+            // Bağımlılık çözümlenemiyorsa parametreler çözümlenemez.
+            if (!$this->canMake($className)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 }
