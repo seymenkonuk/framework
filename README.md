@@ -103,6 +103,43 @@ $router->group(["prefix" => "/users"], function (Router $router): void {
 });
 ```
 
+### Route Authentication
+Route'lar authentication kurallarıyla sınırlandırılabilir. 
+
+Route'un yalnızca kimliği doğrulanmış kullanıcılar tarafından erişilebilir olması için `authenticated()` kullanılabilir:
+```php
+$router->get(
+    "/profile",
+    [ProfileController::class, "index"],
+)->authenticated();
+```
+
+Route'un yalnızca kimliği doğrulanmamış kullanıcılar tarafından erişilebilir olması için `anonymousOnly()` kullanılabilir:
+```php
+$router->get(
+    "/login",
+    [AuthController::class, "login"],
+)->anonymousOnly();
+```
+
+Route'un yalnızca admin kullanıcılar tarafından erişilebilir olması için `admin()` kullanılabilir:
+```php
+$router->get(
+    "/admin",
+    [AdminController::class, "index"],
+)->admin();
+```
+
+Özel bir authentication middleware'i kullanmak için `authenticate()` metodu kullanılabilir:
+```php
+$router->get(
+    "/admin",
+    [AdminController::class, "index"],
+)->authenticate(AdminMiddleware::class);
+```
+
+> 💡 **Not:** Authentication başarılı olmazsa ilgili exception fırlatılır.
+
 ## Attribute Routing
 ### Route Tanımlama 
 Route'lar controller ve metodlar üzerine attribute'lar eklenerek de tanımlanabilir:
@@ -205,6 +242,73 @@ class AdminController extends Controller
     }
 }
 ```
+
+### Route Authentication
+Route'lara authentication kuralları attribute'lar kullanılarak uygulanabilir.
+
+`Authenticated` attribute'u route'un yalnızca kimliği doğrulanmış kullanıcılar tarafından erişilebilir olmasını sağlar:
+```php
+class ProfileController extends Controller
+{
+    #[Get("/profile")]
+    #[Authenticated]
+    public function index(): IResponse
+    {
+        // ...
+    }
+}
+```
+
+`AnonymousOnly` attribute'u route'un yalnızca kimliği doğrulanmamış kullanıcılar tarafından erişilebilir olmasını sağlar:
+```php
+class AuthController extends Controller
+{
+    #[Get("/login")]
+    #[AnonymousOnly]
+    public function login(): IResponse
+    {
+        // ...
+    }
+}
+```
+
+Özel bir authentication middleware'i kullanmak için `Authenticate` attribute'u kullanılabilir:
+```php
+class AdminController extends Controller
+{
+    #[Get("/admin")]
+    #[Authenticate(AdminMiddleware::class)]
+    public function index(): IResponse
+    {
+        // ...
+    }
+}
+```
+
+> 💡 **Not:** Authentication başarılı olmazsa ilgili exception fırlatılır.
+
+Authentication attribute'ları sınıf seviyesinde de tanımlanabilir:
+```php
+#[Admin]
+class AdminController extends Controller
+{
+    #[Get("/admin")]
+    public function index(): IResponse
+    {
+        // ...
+    }
+
+    #[Get("/admin/users")]
+    public function users(): IResponse
+    {
+        // ...
+    }
+}
+```
+
+> 💡 **Not:** Sınıf seviyesinde tanımlanan authentication kuralı içerisindeki tüm route'lara uygulanır.
+
+> 💡 **Not:** Sınıf ve metot seviyesinde farklı authentication kuralları tanımlanmışsa, metot seviyesinde tanımlanan authentication kuralı geçerli olur.
 
 ## Dependency Injection
 Framework'ün DI Container'ı, bağımlılıkları otomatik olarak çözerek constructor, method veya closure parametrelerine aktarabilir.
