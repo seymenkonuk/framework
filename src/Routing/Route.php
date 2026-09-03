@@ -13,6 +13,7 @@ use Closure;
 
 use Seymenkonuk\Framework\Http\Controller;
 use Seymenkonuk\Framework\Http\Middleware;
+use Seymenkonuk\Framework\Http\Middleware\AdminMiddleware;
 use Seymenkonuk\Framework\Http\Middleware\AnonymousOnlyMiddleware;
 use Seymenkonuk\Framework\Http\Middleware\AuthenticatedMiddleware;
 use Seymenkonuk\Framework\Http\RequestSchema\IRequestSchema;
@@ -288,6 +289,17 @@ final class Route
     public function authenticated(): self
     {
         $this->authMiddleware = AuthenticatedMiddleware::class;
+        return $this;
+    }
+
+    /**
+     * Route'un yalnızca admin kullanıcılar tarafından erişilebilir olmasını sağlar.
+     *
+     * @return self güncellenmiş route.
+     */
+    public function admin(): self
+    {
+        $this->authMiddleware = AdminMiddleware::class;
         return $this;
     }
 
