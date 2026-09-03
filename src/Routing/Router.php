@@ -13,26 +13,63 @@ use Closure;
 
 use Seymenkonuk\Framework\Container;
 
+use Seymenkonuk\Framework\Attribute\IRouteModifier;
+use Seymenkonuk\Framework\Attribute\Middleware as MiddlewareAttribute;
+use Seymenkonuk\Framework\Attribute\Name;
+use Seymenkonuk\Framework\Attribute\Prefix;
+use Seymenkonuk\Framework\Attribute\Schema;
+use Seymenkonuk\Framework\Attribute\Route\Route as RouteAttribute;
+use Seymenkonuk\Framework\Attribute\Where\Where;
+
 use Seymenkonuk\Framework\Exception\RouteConflictException;
 use Seymenkonuk\Framework\Exception\RouteNotFoundException;
 use Seymenkonuk\Framework\Exception\ValidationException;
 
-use Seymenkonuk\Framework\Attribute\Name;
-use Seymenkonuk\Framework\Attribute\Schema;
-use Seymenkonuk\Framework\Attribute\Prefix;
-use Seymenkonuk\Framework\Attribute\Middleware as MiddlewareAttribute;
-use Seymenkonuk\Framework\Attribute\Route\Route as RouteAttribute;
-use Seymenkonuk\Framework\Attribute\Where\Where;
 use Seymenkonuk\Framework\Http\Controller;
 use Seymenkonuk\Framework\Http\Middleware;
 use Seymenkonuk\Framework\Http\Request\IRequest;
 use Seymenkonuk\Framework\Http\Response\IResponse;
+
 use Seymenkonuk\Framework\Reflection\AttributeResolver;
 use Seymenkonuk\Framework\Reflection\Reflect;
 
 
 final class Router
 {
+    // --------------------------------------------------------------------------
+    // CONSTANTS
+    // --------------------------------------------------------------------------
+
+    /**
+     * Route üzerinde tek instance olarak çözülen attribute'lar.
+     *
+     * Class ve method seviyesinde aynı attribute tanımlanmışsa,
+     * method'da tanımlanan instance seçilir.
+     *
+     * @var array<class-string<IRouteModifier>>
+     */
+    private const SINGLE_ATTRIBUTES = [
+        Name::class,
+        Schema::class,
+    ];
+
+    /**
+     * Route üzerinde birden fazla instance olarak çözülen attribute'lar.
+     *
+     * Class ve method seviyesinde tanımlanan attribute'lar birlikte
+     * çözümlenerek route'a uygulanabilir.
+     *
+     * @var array<class-string<IRouteModifier>>
+     */
+    private const MULTIPLE_ATTRIBUTES = [
+        MiddlewareAttribute::class,
+        Where::class,
+    ];
+
+    // ------------------------------------------------------------------
+    // PROPERTIES
+    // ------------------------------------------------------------------
+
     /**
      * Route'ları HTTP methodu ve URI'ye göre saklar.
      *
@@ -240,53 +277,40 @@ final class Router
     public function registerController(string $controller): void
     {
         $reflection = Reflect::class($controller);
+
         // Prefix'i Öğren
         $prefixAttribute = AttributeResolver::one($reflection, Prefix::class);
         $prefix = $prefixAttribute !== null ? $prefixAttribute->uri : "";
-        // Class Middleware'lerini Öğren
-        $controllerMiddlewares = array_map(function ($object) {
-            return $object->middleware;
-        }, AttributeResolver::all($reflection, MiddlewareAttribute::class));
-        // Class'ın Metotlarını Öğren
+
+        // Class Metotlarındaki Route'ları Bul
         foreach ($reflection->getMethods() as $method) {
-            // Route Attribute
-            $route = AttributeResolver::one($method, RouteAttribute::class, AttributeResolver::IS_INSTANCEOF);
-            // Route'u Yoksa Action Metot Değildir
-            if ($route === null) {
+            // Route Attribute'unu Al
+            $routeAttribute = AttributeResolver::one($method, RouteAttribute::class, AttributeResolver::IS_INSTANCEOF);
+
+            // Route Attribute'u Yoksa Action Metot Değildir
+            if ($routeAttribute === null) {
                 continue;
             }
-            // Route'u Öğren
-            $methods = (array)$route->methods;
-            $uri = "/" . trim(trim($prefix, "/") . "/" . trim($route->uri, "/"), "/");
-            // Name Attribute
-            $nameAttribute = AttributeResolver::one($method, Name::class);
-            $name = $nameAttribute !== null ? $nameAttribute->name : null;
-            // Schema Attribute
-            $schemaAttribute = AttributeResolver::one($method, Schema::class);
-            $schema = $schemaAttribute !== null ? $schemaAttribute->schema : null;
-            // Middleware Attributes
-            $middlewares = array_map(function ($object) {
-                return $object->middleware;
-            }, AttributeResolver::all($method, MiddlewareAttribute::class));
-            // Where Attributes
-            $where = array_column(array_map(function ($object) {
-                return [
-                    "key" => $object->key,
-                    "value" => $object->pattern,
-                ];
-            }, AttributeResolver::all($method, Where::class, AttributeResolver::IS_INSTANCEOF)), "value", "key");
 
-            // Route Olarak Kaydet
-            $newRoute = $this->match($methods, $uri, [$controller, $method->getName()])
-                ->whereMany($where)
-                ->middleware(array_merge($controllerMiddlewares, $middlewares));
+            // Route'u Oluştur
+            $route = $this->match(
+                (array)$routeAttribute->methods,
+                "/" . trim(trim($prefix, "/") . "/" . trim($routeAttribute->uri, "/"), "/"),
+                [$controller, $method->getName()]
+            );
 
-            if ($schema !== null) {
-                $newRoute->schema($schema);
+            // Tekli Attribute'ları Uygula
+            foreach (self::SINGLE_ATTRIBUTES as $attribute) {
+                $resolved = AttributeResolver::resolve($controller, $method->getName(), $attribute, AttributeResolver::IS_INSTANCEOF);
+                $resolved?->apply($route);
             }
 
-            if ($name !== null) {
-                $newRoute->name($name);
+            // Çoklu Attribute'ları Uygula
+            foreach (self::MULTIPLE_ATTRIBUTES as $attribute) {
+                $attributes = AttributeResolver::resolveAll($controller, $method->getName(), $attribute, AttributeResolver::IS_INSTANCEOF);
+                foreach ($attributes as $resolved) {
+                    $resolved->apply($route);
+                }
             }
         }
     }
