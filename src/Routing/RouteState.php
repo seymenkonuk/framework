@@ -85,13 +85,13 @@ final class RouteState
      *
      * Middleware mevcut değilse null döndürülür.
      *
-     * @param int $key okunacak middleware'in index'i.
+     * @param int $id okunacak middleware'in index'i.
      *
      * @return ?class-string<Middleware> middleware sınıfı veya null.
      */
-    public function middleware(int $key): ?string
+    public function middleware(int $id): ?string
     {
-        return $this->middleware[$key] ?? null;
+        return $this->middleware[$id] ?? null;
     }
 
     /**
