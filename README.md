@@ -612,5 +612,7 @@ composer create-project seymenkonuk/framework-skeleton example
 
 - [ ] Framework'ü kullanan uygulamaların kendi testlerini daha kolay yazabilmesini sağlamak amacıyla bir `TestCase` sınıfı oluşturulacak. 
 
+- [ ] Router'a tanımlanan endpoint bilgileri kullanılarak `/docs` altında otomatik API dokümantasyonu oluşturulması sağlanacak.
+
 ## Lisans
 Bu proje [MIT Lisansı](https://github.com/seymenkonuk/framework/blob/main/LICENSE) ile lisanslanmıştır.
