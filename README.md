@@ -610,7 +610,7 @@ composer create-project seymenkonuk/framework-skeleton example
 
 - [ ] Framework'ün bileşenlerinin doğru çalıştığını doğrulamak ve gelecekte yapılacak değişikliklerin mevcut davranışları bozmadığından emin olmak için kapsamlı bir test suite oluşturulacak.
 
-- [ ] Framework'ü kullanan uygulamaların kendi testlerini daha kolay yazabilmesini sağlamak amacıyla bir `TestCase` sınıfı oluşturulacak. 
+- [X] Framework'ü kullanan uygulamaların kendi testlerini daha kolay yazabilmesini sağlamak amacıyla bir `TestCase` sınıfı oluşturulacak. 
 
 - [ ] Router'a tanımlanan endpoint bilgileri kullanılarak `/docs` altında otomatik API dokümantasyonu oluşturulması sağlanacak.
 
