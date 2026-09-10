@@ -234,14 +234,17 @@ final class Application
      * İsteği işler ve oluşan response'u gönderir.
      * 
      * @param IRequest $request çalıştırılacak HTTP isteği.
+     * @param bool $suppressOtherOutput response haricindeki çıktıları engelleyip engellemeyeceği.
      *
      * @return ResponseState gönderilen response'un state'i.
      */
-    public function run(IRequest $request): ResponseState
+    public function run(IRequest $request, bool $suppressOtherOutput = true): ResponseState
     {
         try {
             // Çıktıları Buffer'da Topla
-            ob_start();
+            if ($suppressOtherOutput) {
+                ob_start();
+            }
 
             // Route Yapılandırmasını Yap
             if ($this->routeConfig !== null) {
@@ -263,8 +266,10 @@ final class Application
         }
 
         // Bufferdakileri Çöpe At
-        while (ob_get_level() > 0) {
-            ob_end_clean();
+        if ($suppressOtherOutput) {
+            while (ob_get_level() > 0) {
+                ob_end_clean();
+            }
         }
 
         // Response'u Gönder
