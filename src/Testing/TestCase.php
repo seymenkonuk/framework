@@ -18,6 +18,26 @@ use Seymenkonuk\Framework\Http\Response\ResponseState;
 abstract class TestCase extends PHPUnitTestCase
 {
     // --------------------------------------------------------------------------
+    // PROPERTIES
+    // --------------------------------------------------------------------------
+
+    private array $headers = [];
+    private array $cookies = [];
+    private array $servers = [];
+
+    // --------------------------------------------------------------------------
+    // SETUP
+    // --------------------------------------------------------------------------
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->headers = [];
+        $this->cookies = [];
+        $this->servers = [];
+    }
+
+    // --------------------------------------------------------------------------
     // APPLICATION
     // --------------------------------------------------------------------------
 
@@ -27,14 +47,41 @@ abstract class TestCase extends PHPUnitTestCase
     // REQUEST OPTIONS
     // --------------------------------------------------------------------------
 
-    abstract protected function withCookie(string $name, string $value): self;
-    abstract protected function withCookies(array $cookies): self;
+    protected function withCookie(string $name, string $value): self
+    {
+        $this->cookies[$name] = $value;
+        return $this;
+    }
 
-    abstract protected function withHeader(string $name, string $value): self;
-    abstract protected function withHeaders(array $headers): self;
+    protected function withCookies(array $cookies): self
+    {
+        $this->cookies = array_merge($this->cookies, $cookies);
+        return $this;
+    }
 
-    abstract protected function withServer(string $name, string $value): self;
-    abstract protected function withServers(array $servers): self;
+    protected function withHeader(string $name, string $value): self
+    {
+        $this->headers[$name] = $value;
+        return $this;
+    }
+
+    protected function withHeaders(array $headers): self
+    {
+        $this->headers = array_merge($this->headers, $headers);
+        return $this;
+    }
+
+    protected function withServer(string $name, string $value): self
+    {
+        $this->servers[$name] = $value;
+        return $this;
+    }
+
+    protected function withServers(array $servers): self
+    {
+        $this->servers = array_merge($this->servers, $servers);
+        return $this;
+    }
 
     // --------------------------------------------------------------------------
     // FORM REQUEST
