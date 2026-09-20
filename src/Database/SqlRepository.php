@@ -140,6 +140,28 @@ abstract class SqlRepository
     }
 
     /**
+     * Belirtilen sütun değerine ait bir kaydın mevcut olup olmadığını
+     * döndürür.
+     *
+     * @param string $column kontrol edilecek sütun adı.
+     * @param int|string $value kontrol edilecek sütun değeri.
+     *
+     * @return bool kayıt mevcutsa true, aksi halde false.
+     */
+    public function existsBy(string $column, int|string $value): bool
+    {
+        return $this->database
+            ->query("
+                SELECT 1
+                FROM {$this->table}
+                WHERE {$column} = :value
+                LIMIT 1
+            ")
+            ->execute(["value" => $value])
+            ->exists();
+    }
+
+    /**
      * Belirtilen sütun değerine ait ilk kaydı döndürür.
      *
      * Kayıt bulunamazsa null döndürülür.
