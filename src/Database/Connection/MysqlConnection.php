@@ -16,6 +16,7 @@ use Closure;
 use Throwable;
 use Generator;
 
+use Seymenkonuk\Framework\Database\Model;
 use Seymenkonuk\Framework\Exception\DatabaseException;
 
 
@@ -90,17 +91,37 @@ final class MysqlConnection implements ISqlConnection
 
     public function fetch(?string $class = null): mixed
     {
+        return $this->fetchStatement($this->statement, $class);
+    }
+
+    /**
+     * Verilen PDOStatement'tan tek bir kayıt döndürür.
+     *
+     * $class belirtilirse kayıt belirtilen Model sınıfının örneği olarak döndürülür.
+     * Belirtilmezse kayıt anahtar-değer dizisi olarak döndürülür.
+     *
+     * Kayıt bulunamazsa null döndürülür.
+     *
+     * @template T of Model
+     *
+     * @param PDOStatement|null $statement kullanılacak PDOStatement.
+     * @param class-string<T>|null $class kullanılacak Model sınıfı.
+     *
+     * @return ($class is null ? array<string, mixed>|null : T|null)
+     */
+    private function fetchStatement(?PDOStatement $statement, ?string $class = null): mixed
+    {
         try {
             if ($class !== null) {
-                $this->statement?->setFetchMode(
+                $statement?->setFetchMode(
                     PDO::FETCH_CLASS,
                     $class,
                 );
                 /** @phpstan-ignore return.type */
-                return $this->statement?->fetch() ?: null;
+                return $statement?->fetch() ?: null;
             }
             /** @phpstan-ignore return.type */
-            return $this->statement?->fetch(PDO::FETCH_ASSOC) ?: null;
+            return $statement?->fetch(PDO::FETCH_ASSOC) ?: null;
         } catch (Throwable $e) {
             throw new DatabaseException($e->getMessage(), previous: $e);
         }
@@ -127,7 +148,30 @@ final class MysqlConnection implements ISqlConnection
 
     public function cursor(?string $class = null): Generator
     {
-        while (($row = $this->fetch($class)) !== null) {
+        return $this->iterate($this->statement, $class);
+    }
+
+    /**
+     * Verilen PDOStatement'tan kayıtları tek tek döndürür.
+     *
+     * $class belirtilirse kayıtlar belirtilen Model sınıfının örnekleri olarak döndürülür. 
+     * Belirtilmezse kayıtlar anahtar-değer dizileri olarak döndürülür.
+     *
+     * Kayıtlar belleğe topluca alınmadan üretildiği için büyük sonuç kümelerinde
+     * kullanılabilir.
+     *
+     * @template T of Model
+     *
+     * @param PDOStatement|null $statement kullanılacak PDOStatement.
+     * @param class-string<T>|null $class kullanılacak Model sınıfı.
+     *
+     * @return Generator<int, ($class is null ? array<string, mixed> : T)>
+     */
+    private function iterate(
+        ?PDOStatement $statement,
+        ?string $class
+    ): Generator {
+        while (($row = $this->fetchStatement($statement, $class)) !== null) {
             yield $row;
         }
     }
