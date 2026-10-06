@@ -315,4 +315,44 @@ abstract class SqlRepository
 
         return $this->database->rowCount() > 0;
     }
+    
+    // --------------------------------------------------------------------------
+    // GENERATE ID
+    // --------------------------------------------------------------------------
+
+    /**
+     * Belirtilen karakterlerden benzersiz bir kod üretir.
+     *
+     * @param int $length kod uzunluğu.
+     * @param string $characters kullanılacak karakterler.
+     *
+     * @return string
+     */
+    public function generateUniqueCode(int $length, string $characters = "0123456789ABCDEF"): string
+    {
+        do {
+            $code = $this->generateCode($length, $characters);
+        } while ($this->exists($code));
+        return $code;
+    }
+
+    /**
+     * Belirtilen karakterlerden bir kod üretir.
+     *
+     * @param int $length kod uzunluğu.
+     * @param string $characters kullanılacak karakterler.
+     *
+     * @return string
+     */
+    public function generateCode(int $length, string $characters = "0123456789ABCDEF"): string
+    {
+        $code = '';
+        $charactersLength = strlen($characters);
+
+        for ($i = 0; $i < $length; $i++) {
+            $code .= $characters[random_int(0, $charactersLength - 1)];
+        }
+
+        return $code;
+    }
 }
