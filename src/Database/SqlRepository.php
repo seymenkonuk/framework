@@ -328,7 +328,7 @@ abstract class SqlRepository
      *
      * @return string
      */
-    public function generateUniqueCode(int $length, string $characters = "0123456789ABCDEF"): string
+    public function generateUniqueCode(int $length, string $characters = "0123456789abcdef"): string
     {
         do {
             $code = $this->generateCode($length, $characters);
@@ -344,7 +344,7 @@ abstract class SqlRepository
      *
      * @return string
      */
-    public function generateCode(int $length, string $characters = "0123456789ABCDEF"): string
+    public function generateCode(int $length, string $characters = "0123456789abcdef"): string
     {
         $code = '';
         $charactersLength = strlen($characters);
